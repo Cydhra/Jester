@@ -9,7 +9,6 @@ const BLOCK_LENGTH_DOUBLE_WORDS: usize = BLOCK_LENGTH_BYTES / 4;
 
 #[derive(Debug, Copy, Clone)]
 pub struct SHA1Hash {
-    message_length: u64,
     pub a: u32,
     pub b: u32,
     pub c: u32,
@@ -18,7 +17,7 @@ pub struct SHA1Hash {
 }
 
 impl MerkleDamagardHash for SHA1Hash {
-    const INITIAL: Self = SHA1Hash { message_length: 0, a: 0x67452301, b: 0xEFCDAB89, c: 0x98BADCFE, d: 0x10325476, e: 0xC3D2E1F0 };
+    const INITIAL: Self = SHA1Hash { a: 0x67452301, b: 0xEFCDAB89, c: 0x98BADCFE, d: 0x10325476, e: 0xC3D2E1F0 };
 
     const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
 
