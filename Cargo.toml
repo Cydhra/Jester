@@ -1,0 +1,10 @@
+[package]
+name = "jester"
+version = "0.1.0"
+authors = ["Cydhra <ubezl@student.kit.edu>"]
+edition = "2018"
+
+[dependencies]
+
+[dev-dependencies]
+hex = "0.3.2"
