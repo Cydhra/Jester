@@ -13,7 +13,8 @@ mod tests {
 }
 
 /// Copies the ``source`` array to the ``dest`` array with respect to alignment and endianness. ``source`` must be at
-/// least four times bigger than ``dest``, otherwise this function's behavior is undefined.
+/// least four times bigger than ``dest``, otherwise this function's behavior is undefined. Data from ``source``
+/// will be treated as little endian integers
 pub unsafe fn align_to_u32a_le(dest: &mut [u32], source: &[u8]) {
     assert!(source.len() >= dest.len() * 4);
 
@@ -30,7 +31,8 @@ pub unsafe fn align_to_u32a_le(dest: &mut [u32], source: &[u8]) {
 }
 
 /// Copies the ``source`` array to the ``dest`` array with respect to alignment and endianness. ``source`` must be at
-/// least four times bigger than ``dest``, otherwise this function's behavior is undefined.
+/// least four times bigger than ``dest``, otherwise this function's behavior is undefined. Data from ``source``
+/// will be treated as big endian integers
 pub unsafe fn align_to_u32a_be(dest: &mut [u32], source: &[u8]) {
     assert!(source.len() >= dest.len() * 4);
 
