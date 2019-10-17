@@ -1,3 +1,5 @@
+#![allow(clippy::unreadable_literal)]
+
 use std::mem;
 use std::mem::size_of;
 
@@ -46,7 +48,7 @@ impl SHA1Hash {
 
         let mut round_state = *self;
 
-        for i in 0..80 {
+        for (i, data_word) in extended_block.iter().enumerate() {
             let (scrambled_data, magic_constant) = match i {
                 0..=19 => {
                     ((round_state.b & round_state.c) | ((!round_state.b) & round_state.d), 0x5A827999)
@@ -68,7 +70,7 @@ impl SHA1Hash {
                 .wrapping_add(scrambled_data)
                 .wrapping_add(round_state.e)
                 .wrapping_add(magic_constant)
-                .wrapping_add(extended_block[i]);
+                .wrapping_add(*data_word);
             round_state.e = round_state.d;
             round_state.d = round_state.c;
             round_state.c = u32::rotate_left(round_state.b, 30);
