@@ -12,6 +12,9 @@ const BLOCK_LENGTH_BYTES: usize = 64;
 /// the hash block length in 32 bit integers
 const BLOCK_LENGTH_DOUBLE_WORDS: usize = BLOCK_LENGTH_BYTES / 4;
 
+/// The initial state for any MD5 hash. From here, all blocks are applied.
+pub const INITIAL: MD5Hash = MD5Hash(0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476);
+
 /// A tuple struct containing all four bytes of an MD5 Hash.
 #[derive(Debug, Copy, Clone)]
 pub struct MD5Hash(pub u32, pub u32, pub u32, pub u32);
@@ -44,11 +47,9 @@ static MAGIC_SINUS_SCALARS: [u32; 64] = [
 
 impl MD5Hash {
 
-    const INITIAL: Self = MD5Hash(0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476);
-
     /// Digest a whole message of arbitrary size
     pub fn digest_message(input: &[u8]) -> Self {
-        let mut hash_state = Self::INITIAL;
+        let mut hash_state = INITIAL;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 
         // digest full blocks

@@ -7,6 +7,9 @@ use crate::array_util;
 
 const BLOCK_LENGTH_BYTES: usize = 64;
 
+/// The initial state for any SHA1 hash. From here, all blocks are applied.
+pub const INITIAL: SHA1Hash = SHA1Hash { a: 0x67452301, b: 0xEFCDAB89, c: 0x98BADCFE, d: 0x10325476, e: 0xC3D2E1F0 };
+
 #[derive(Debug, Copy, Clone)]
 pub struct SHA1Hash {
     pub a: u32,
@@ -17,11 +20,9 @@ pub struct SHA1Hash {
 }
 
 impl SHA1Hash {
-    const INITIAL: Self = SHA1Hash { a: 0x67452301, b: 0xEFCDAB89, c: 0x98BADCFE, d: 0x10325476, e: 0xC3D2E1F0 };
-
     /// Digest a full message of arbitrary size.
     pub fn digest_message(input: &[u8]) -> Self {
-        let mut hash_state = Self::INITIAL;
+        let mut hash_state = INITIAL;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 
         // digest full blocks
