@@ -2,10 +2,8 @@ use std::mem;
 use std::mem::size_of;
 
 use crate::array_util;
-use crate::hash::merkle_damgard::MerkleDamagardHash;
 
 const BLOCK_LENGTH_BYTES: usize = 64;
-const BLOCK_LENGTH_DOUBLE_WORDS: usize = BLOCK_LENGTH_BYTES / 4;
 
 #[derive(Debug, Copy, Clone)]
 pub struct SHA1Hash {
@@ -16,13 +14,27 @@ pub struct SHA1Hash {
     pub e: u32,
 }
 
-impl MerkleDamagardHash for SHA1Hash {
+impl SHA1Hash {
     const INITIAL: Self = SHA1Hash { a: 0x67452301, b: 0xEFCDAB89, c: 0x98BADCFE, d: 0x10325476, e: 0xC3D2E1F0 };
 
-    const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
+    /// Digest a full message of arbitrary size.
+    pub fn digest_message(input: &[u8]) -> Self {
+        let mut hash_state = Self::INITIAL;
+        let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 
-    fn round_function(&mut self, input_block: &[u8]) {
-        assert_eq!(input_block.len(), Self::BLOCK_SIZE);
+        // digest full blocks
+        for block_index in 0..message_blocks_count {
+            hash_state.round_function(&input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES]);
+        }
+
+        // pad and digest last block
+        hash_state.digest_last_block(input);
+
+        return hash_state;
+    }
+
+    pub fn round_function(&mut self, input_block: &[u8]) {
+        assert_eq!(input_block.len(), BLOCK_LENGTH_BYTES);
 
         let mut extended_block = [0u32; 80];
         unsafe { array_util::align_to_u32a_le(&mut extended_block[0..16], input_block) };
@@ -71,8 +83,7 @@ impl MerkleDamagardHash for SHA1Hash {
         self.e = self.e.wrapping_add(round_state.e);
     }
 
-    //noinspection DuplicatedCode
-    fn digest_last_block(&mut self, input: &[u8]) {
+    pub fn digest_last_block(&mut self, input: &[u8]) {
         let message_length_bits: u64 = (input.len() as u64) * 8u64;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 

@@ -4,9 +4,8 @@
 mod tests {
     use hex;
 
-    use crate::hash::merkle_damgard::md5::MD5Hash;
-    use crate::hash::merkle_damgard::MerkleDamagardHash;
-    use crate::hash::merkle_damgard::sha1::SHA1Hash;
+    use crate::hash::md5::MD5Hash;
+    use crate::hash::sha1::SHA1Hash;
 
     #[test]
     fn test_md5() {

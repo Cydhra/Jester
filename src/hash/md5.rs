@@ -5,7 +5,6 @@ use std::mem;
 use std::mem::size_of;
 
 use crate::array_util;
-use crate::hash::merkle_damgard::MerkleDamagardHash;
 
 /// the hash block length in bytes
 const BLOCK_LENGTH_BYTES: usize = 64;
@@ -50,11 +49,25 @@ impl MD5Hash {
     }
 }
 
-impl MerkleDamagardHash for MD5Hash {
+impl MD5Hash {
 
     const INITIAL: Self = MD5Hash(0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476);
 
-    const BLOCK_SIZE: usize = 64;
+    /// Digest a whole message of arbitrary size
+    pub fn digest_message(input: &[u8]) -> Self {
+        let mut hash_state = Self::INITIAL;
+        let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
+
+        // digest full blocks
+        for block_index in 0..message_blocks_count {
+            hash_state.round_function(&input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES]);
+        }
+
+        // pad and digest last block
+        hash_state.digest_last_block(input);
+
+        return hash_state;
+    }
 
     /// compute one round of MD5
     ///
@@ -63,7 +76,7 @@ impl MerkleDamagardHash for MD5Hash {
     ///
     /// # Returns
     /// A new ``MD5HashState`` computed from the input state and the input data block.
-    fn round_function(&mut self, input: &[u8]) {
+    pub fn round_function(&mut self, input: &[u8]) {
         assert_eq!(input.len(), BLOCK_LENGTH_BYTES);
 
         let mut input_block = [0u32; BLOCK_LENGTH_DOUBLE_WORDS];
@@ -110,7 +123,7 @@ impl MerkleDamagardHash for MD5Hash {
     /// # Parameters
     /// ``input`` the input array that shall be padded and applied. It can be longer than one block,
     /// all full blocks prefixing the array will be omitted.
-    fn digest_last_block(&mut self, input: &[u8]) {
+    pub fn digest_last_block(&mut self, input: &[u8]) {
         let message_length_bits: u64 = (input.len() as u64) * 8u64;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 

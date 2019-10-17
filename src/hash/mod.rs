@@ -1,1 +1,2 @@
-pub mod merkle_damgard;
+pub mod md5;
+pub mod sha1;
