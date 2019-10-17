@@ -37,7 +37,7 @@ impl SHA1Hash {
         assert_eq!(input_block.len(), BLOCK_LENGTH_BYTES);
 
         let mut extended_block = [0u32; 80];
-        unsafe { array_util::align_to_u32a_le(&mut extended_block[0..16], input_block) };
+        unsafe { array_util::align_to_u32a_be(&mut extended_block[0..16], input_block) };
 
         for i in 16..80 {
             extended_block[i] = u32::rotate_left(
@@ -50,17 +50,17 @@ impl SHA1Hash {
             let (scrambled_data, magic_constant) = match i {
                 0..=19 => {
                     ((round_state.b & round_state.c) | ((!round_state.b) & round_state.d), 0x5A827999)
-                },
+                }
                 20..=39 => {
                     (round_state.b ^ round_state.c ^ round_state.d, 0x6ED9EBA1)
-                },
+                }
                 40..=59 => {
                     ((round_state.b & round_state.c) | (round_state.b & round_state.d)
                          | (round_state.c & round_state.d), 0x8F1BBCDC)
-                },
+                }
                 60..=79 => {
                     (round_state.b ^ round_state.c ^ round_state.d, 0xCA62C1D6)
-                },
+                }
                 _ => unreachable!()
             };
 
@@ -104,7 +104,7 @@ impl SHA1Hash {
             let mut overflow_block = [0u8; BLOCK_LENGTH_BYTES];
             // append the message length in bits
             for i in 0..8 {
-                overflow_block[BLOCK_LENGTH_BYTES - 8 + i] = (message_length_bits >> (i * 8) as u64) as u8;
+                overflow_block[BLOCK_LENGTH_BYTES - i] = (message_length_bits >> (i * 8) as u64) as u8;
             }
 
             self.round_function(&last_block);
@@ -112,7 +112,7 @@ impl SHA1Hash {
         } else {
             // append the message length in bits
             for i in 0..8 {
-                last_block[56 + i] = (message_length_bits >> (i * 8) as u64) as u8;
+                last_block[63 - i] = (message_length_bits >> (i * 8) as u64) as u8;
             }
 
             self.round_function(&last_block);
@@ -123,6 +123,13 @@ impl SHA1Hash {
 impl SHA1Hash {
     /// Generates a raw ``[u8; 16]`` array from the current hash state.
     pub fn to_raw(&self) -> [u8; 20] {
-        unsafe { mem::transmute::<[u32; 5], [u8; 20]>([self.a, self.b, self.c, self.d, self.e]) }
+        unsafe {
+            mem::transmute::<[u32; 5], [u8; 20]>([
+                u32::from_be(self.a),
+                u32::from_be(self.b),
+                u32::from_be(self.c),
+                u32::from_be(self.d),
+                u32::from_be(self.e)])
+        }
     }
 }

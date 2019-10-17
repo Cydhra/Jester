@@ -28,3 +28,20 @@ pub unsafe fn align_to_u32a_le(dest: &mut [u32], source: &[u8]) {
         byte_ptr = byte_ptr.offset(4);
     }
 }
+
+/// Copies the ``source`` array to the ``dest`` array with respect to alignment and endianness. ``source`` must be at
+/// least four times bigger than ``dest``, otherwise this function's behavior is undefined.
+pub unsafe fn align_to_u32a_be(dest: &mut [u32], source: &[u8]) {
+    assert!(source.len() >= dest.len() * 4);
+
+    let mut byte_ptr: *const u8 = source.get_unchecked(0);
+    let mut dword_ptr: *mut u32 = dest.get_unchecked_mut(0);
+
+    for _ in 0..dest.len() {
+        let mut current: u32 = mem::uninitialized();
+        ptr::copy_nonoverlapping(byte_ptr, &mut current as *mut _ as *mut u8, 4);
+        *dword_ptr = u32::from_be(current);
+        dword_ptr = dword_ptr.offset(1);
+        byte_ptr = byte_ptr.offset(4);
+    }
+}
