@@ -104,6 +104,7 @@ impl SHA1Hash {
             let mut overflow_block = [0u8; BLOCK_LENGTH_BYTES];
             // append the message length in bits
             for i in 0..8 {
+                // note, that the number is appended backwards because it must be handled as a big endian number
                 overflow_block[BLOCK_LENGTH_BYTES - i] = (message_length_bits >> (i * 8) as u64) as u8;
             }
 
@@ -112,15 +113,14 @@ impl SHA1Hash {
         } else {
             // append the message length in bits
             for i in 0..8 {
+                // note, that the number is appended backwards because it must be handled as a big endian number
                 last_block[63 - i] = (message_length_bits >> (i * 8) as u64) as u8;
             }
 
             self.round_function(&last_block);
         }
     }
-}
 
-impl SHA1Hash {
     /// Generates a raw ``[u8; 16]`` array from the current hash state.
     pub fn to_raw(&self) -> [u8; 20] {
         unsafe {
