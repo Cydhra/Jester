@@ -4,6 +4,7 @@ use std::mem;
 use std::mem::size_of;
 
 use crate::array_util;
+use crate::hash::HashFunction;
 
 const BLOCK_LENGTH_BYTES: usize = 64;
 
@@ -25,28 +26,6 @@ pub struct SHA1Hash {
 }
 
 impl SHA1Hash {
-    /// Digest a full message of arbitrary size.
-    /// #Parameters
-    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
-    ///
-    /// #Output
-    /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
-    /// length was appended to the input data for digestion.
-    pub fn digest_message(input: &[u8]) -> Self {
-        let mut hash_state = INITIAL;
-        let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
-
-        // digest full blocks
-        for block_index in 0..message_blocks_count {
-            hash_state.round_function(&input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES]);
-        }
-
-        // pad and digest last block
-        hash_state.digest_last_block(input);
-
-        return hash_state;
-    }
-
     /// SHA-1 round function that corresponds to the digestion of exactly one block of data. This block must be
     /// exactly `BLOCK_LENGTH_BYTES` long.
     /// #Parameters
@@ -154,5 +133,29 @@ impl SHA1Hash {
                 u32::from_be(self.d),
                 u32::from_be(self.e)])
         }
+    }
+}
+
+impl HashFunction for SHA1Hash {
+    /// Digest a full message of arbitrary size.
+    /// #Parameters
+    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
+    ///
+    /// #Output
+    /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
+    /// length was appended to the input data for digestion.
+    fn digest_message(input: &[u8]) -> Self {
+        let mut hash_state = INITIAL;
+        let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
+
+        // digest full blocks
+        for block_index in 0..message_blocks_count {
+            hash_state.round_function(&input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES]);
+        }
+
+        // pad and digest last block
+        hash_state.digest_last_block(input);
+
+        return hash_state;
     }
 }

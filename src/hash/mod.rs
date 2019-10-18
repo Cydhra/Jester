@@ -1,10 +1,15 @@
 pub mod md5;
 pub mod sha1;
 
+pub trait HashFunction {
+    fn digest_message(input: &[u8]) -> Self;
+}
+
 #[cfg(test)]
 mod tests {
     use hex;
 
+    use super::HashFunction;
     use super::md5::MD5Hash;
     use super::sha1::SHA1Hash;
 

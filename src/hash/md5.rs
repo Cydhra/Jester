@@ -5,6 +5,7 @@ use std::mem;
 use std::mem::size_of;
 
 use crate::array_util;
+use crate::hash::HashFunction;
 
 /// the hash block length in bytes
 const BLOCK_LENGTH_BYTES: usize = 64;
@@ -46,28 +47,6 @@ static MAGIC_SINUS_SCALARS: [u32; 64] = [
     0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391];
 
 impl MD5Hash {
-
-    /// Digest a full message of arbitrary size.
-    /// #Parameters
-    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
-    ///
-    /// #Output
-    /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
-    /// length was appended to the input data for digestion.
-    pub fn digest_message(input: &[u8]) -> Self {
-        let mut hash_state = INITIAL;
-        let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
-
-        // digest full blocks
-        for block_index in 0..message_blocks_count {
-            hash_state.round_function(&input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES]);
-        }
-
-        // pad and digest last block
-        hash_state.digest_last_block(input);
-
-        return hash_state;
-    }
 
     /// compute one round of MD5
     ///
@@ -166,5 +145,29 @@ impl MD5Hash {
             u32::from_le(self.1),
             u32::from_le(self.2),
             u32::from_le(self.3)]) }
+    }
+}
+
+impl HashFunction for MD5Hash {
+    /// Digest a full message of arbitrary size.
+    /// #Parameters
+    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
+    ///
+    /// #Output
+    /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
+    /// length was appended to the input data for digestion.
+    fn digest_message(input: &[u8]) -> Self {
+        let mut hash_state = INITIAL;
+        let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
+
+        // digest full blocks
+        for block_index in 0..message_blocks_count {
+            hash_state.round_function(&input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES]);
+        }
+
+        // pad and digest last block
+        hash_state.digest_last_block(input);
+
+        return hash_state;
     }
 }
