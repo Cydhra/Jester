@@ -32,8 +32,6 @@ pub trait HashFunction {
 mod tests {
     use hex;
 
-    use crate::hash::hmac::hmac;
-
     use super::HashFunction;
     use super::md5::MD5Hash;
     use super::sha1::SHA1Hash;
@@ -49,8 +47,6 @@ Fidelity has always been your greatest quality, Ragnier. I swear to you to my so
 all of your sins, they will collapse into the abyss we all race towards. Share that truth with the world, share it \
 with the provinces and the valley and the empires in the west. Show them your conviction, \
 show them the serenity of the void.";
-
-    const HMAC_EXAMPLE: &str = "The quick brown fox jumps over the lazy dog";
 
     #[test]
     fn test_md5() {
@@ -74,17 +70,5 @@ show them the serenity of the void.";
 
         assert_eq!(hex::encode(&SHA1Hash::digest_message(LONG_TEXT.as_bytes()).raw()),
                    "3f7febf27a733691542c1ac367f2d2692f47c24f");
-    }
-
-    #[test]
-    fn test_hmac() {
-        // test md5
-        assert_eq!(hex::encode(hmac::<MD5Hash>(b"key", HMAC_EXAMPLE.as_bytes())),
-                   "80070713463e7749b90c2dc24911e275");
-
-        // test sha1
-        assert_eq!(hex::encode(hmac::<SHA1Hash>(b"key", HMAC_EXAMPLE.as_bytes())),
-                   "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9");
-
     }
 }

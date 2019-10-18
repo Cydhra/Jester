@@ -37,3 +37,25 @@ fn pad(key: &[u8], length: usize) -> Box<[u8]> {
     padded_vec.extend_from_slice(&vec![0u8; length - key.len()]);
     padded_vec.into_boxed_slice()
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::hash::md5::MD5Hash;
+    use crate::hash::sha1::SHA1Hash;
+
+    use super::hmac;
+
+    const HMAC_EXAMPLE: &[u8] = b"The quick brown fox jumps over the lazy dog";
+
+    #[test]
+    fn test_hmac_md5() {
+        assert_eq!(hex::encode(hmac::<MD5Hash>(b"key", HMAC_EXAMPLE)),
+                   "80070713463e7749b90c2dc24911e275");
+    }
+
+    #[test]
+    fn test_hmac_sha1() {
+        assert_eq!(hex::encode(hmac::<SHA1Hash>(b"key", HMAC_EXAMPLE)),
+                   "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9");
+    }
+}
