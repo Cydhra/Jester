@@ -10,7 +10,7 @@ mod tests {
 
     const EMPTY_MESSAGE: &str = "";
 
-    const SOME_TEXT: &str = "a-very-long-message-that-cannot-be-digested-at-once";
+    const SOME_TEXT: &str = "a-very-long-message-that-can-be-digested-at-once";
 
     const LONG_TEXT: &str = "God? You'd assert that a God exhibits neither shame nor despair. And yet I stand unchanged; \
 a tragic husk with bloodied hands. I surrendered my future, the prospect of a family to carry your poison. \
@@ -26,7 +26,7 @@ show them the serenity of the void.";
                    "d41d8cd98f00b204e9800998ecf8427e");
 
         assert_eq!(hex::encode(MD5Hash::digest_message(SOME_TEXT.as_bytes()).to_raw()),
-                   "5748be477f8cab2e6d785cd2412b823c");
+                   "9cf653b21b12797c80f769c8a753c360");
 
         assert_eq!(hex::encode(MD5Hash::digest_message(LONG_TEXT.as_bytes()).to_raw()),
                    "406ef8da29b4c6c7e64ff1d163ad7b90");
@@ -38,7 +38,7 @@ show them the serenity of the void.";
                    "da39a3ee5e6b4b0d3255bfef95601890afd80709");
 
         assert_eq!(hex::encode(SHA1Hash::digest_message(SOME_TEXT.as_bytes()).to_raw()),
-                   "fc0557cb580c6cc1949f126d0020ef6e7eadba7d");
+                   "931bec5eec465b2e742deafbdcae2681820a4ac9");
 
         assert_eq!(hex::encode(SHA1Hash::digest_message(LONG_TEXT.as_bytes()).to_raw()),
                    "6b73c6677532abff53f5ccb966f4dbdb8b1c2185");
