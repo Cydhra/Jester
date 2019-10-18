@@ -149,6 +149,10 @@ impl MD5Hash {
 }
 
 impl HashFunction for MD5Hash {
+    const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
+
+    const OUTPUT_SIZE: usize = mem::size_of::<MD5Hash>();
+
     /// Digest a full message of arbitrary size.
     /// #Parameters
     /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.

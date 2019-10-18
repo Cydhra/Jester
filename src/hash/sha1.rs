@@ -14,7 +14,8 @@ pub const INITIAL: SHA1Hash = SHA1Hash {
     b: 0xEFCDAB89,
     c: 0x98BADCFE,
     d: 0x10325476,
-    e: 0xC3D2E1F0 };
+    e: 0xC3D2E1F0,
+};
 
 #[derive(Debug, Copy, Clone)]
 pub struct SHA1Hash {
@@ -137,6 +138,10 @@ impl SHA1Hash {
 }
 
 impl HashFunction for SHA1Hash {
+    const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
+
+    const OUTPUT_SIZE: usize = mem::size_of::<SHA1Hash>();
+
     /// Digest a full message of arbitrary size.
     /// #Parameters
     /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.

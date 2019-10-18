@@ -3,6 +3,13 @@ pub mod sha1;
 
 /// Any hash function that can digest arbitrarily sized input.
 pub trait HashFunction {
+
+    /// The digestion block size of this hash function
+    const BLOCK_SIZE: usize;
+
+    /// The size of the output hash state
+    const OUTPUT_SIZE: usize;
+
     /// Digest a full message of arbitrary size.
     /// #Parameters
     /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
