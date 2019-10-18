@@ -123,18 +123,6 @@ impl SHA1Hash {
             self.round_function(&last_block);
         }
     }
-
-    /// Generates a raw ``[u8; 20]`` array from the current hash state.
-    pub fn to_raw(&self) -> [u8; 20] {
-        unsafe {
-            mem::transmute::<[u32; 5], [u8; 20]>([
-                u32::from_be(self.a),
-                u32::from_be(self.b),
-                u32::from_be(self.c),
-                u32::from_be(self.d),
-                u32::from_be(self.e)])
-        }
-    }
 }
 
 impl HashFunction for SHA1Hash {
@@ -162,5 +150,18 @@ impl HashFunction for SHA1Hash {
         hash_state.digest_last_block(input);
 
         return hash_state;
+    }
+
+
+    /// Generates a raw ``[u8; 20]`` array from the current hash state.
+    fn raw(hash: &Self) -> Box<[u8]> {
+            unsafe {
+                mem::transmute::<[u32; 5], [u8; 20]>([
+                    u32::from_be(hash.a),
+                    u32::from_be(hash.b),
+                    u32::from_be(hash.c),
+                    u32::from_be(hash.d),
+                    u32::from_be(hash.e)])
+            }.to_vec().into()
     }
 }

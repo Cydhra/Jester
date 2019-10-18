@@ -47,7 +47,6 @@ static MAGIC_SINUS_SCALARS: [u32; 64] = [
     0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391];
 
 impl MD5Hash {
-
     /// compute one round of MD5
     ///
     /// # Parameters
@@ -137,15 +136,6 @@ impl MD5Hash {
             self.round_function(&last_block);
         }
     }
-
-    /// Generates a raw ``[u8; 16]`` array from the current hash state.
-    pub fn to_raw(&self) -> [u8; 16] {
-        unsafe { mem::transmute::<[u32; 4], [u8; 16]>([
-            u32::from_le(self.0),
-            u32::from_le(self.1),
-            u32::from_le(self.2),
-            u32::from_le(self.3)]) }
-    }
 }
 
 impl HashFunction for MD5Hash {
@@ -173,5 +163,17 @@ impl HashFunction for MD5Hash {
         hash_state.digest_last_block(input);
 
         return hash_state;
+    }
+
+
+    /// Generates a raw ``[u8; 16]`` array from the current hash state.
+    fn raw(hash: &Self) -> Box<[u8]> {
+        unsafe {
+            mem::transmute::<[u32; 4], [u8; 16]>([
+                u32::from_le(hash.0),
+                u32::from_le(hash.1),
+                u32::from_le(hash.2),
+                u32::from_le(hash.3)])
+        }.to_vec().into()
     }
 }
