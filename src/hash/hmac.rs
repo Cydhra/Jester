@@ -12,7 +12,7 @@ use crate::hash::HashFunction;
 pub fn hmac<H>(key: &[u8], message: &[u8]) -> Box<[u8]>
     where H: HashFunction {
     let shortened_key = if key.len() > H::BLOCK_SIZE {
-        H::raw(&H::digest_message(key))
+        H::digest_message(key).raw()
     } else {
         key.into()
     };
@@ -27,9 +27,9 @@ pub fn hmac<H>(key: &[u8], message: &[u8]) -> Box<[u8]>
     let mut inner_message = padded_key.clone().iter().map(|v| v ^ 0x36).collect::<Vec<_>>();
 
     inner_message.append(&mut message.to_vec());
-    outer_message.append(&mut H::raw(&H::digest_message(&inner_message)).into());
+    outer_message.append(&mut H::digest_message(&inner_message).raw().into());
 
-    H::raw(&H::digest_message(&outer_message))
+    H::digest_message(&outer_message).raw()
 }
 
 fn pad(key: &[u8], length: usize) -> Box<[u8]> {

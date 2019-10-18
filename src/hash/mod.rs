@@ -25,7 +25,7 @@ pub trait HashFunction {
     ///
     /// #Output
     /// A boxed slice of bytes.
-    fn raw(hash: &Self) -> Box<[u8]>;
+    fn raw(&self) -> Box<[u8]>;
 }
 
 #[cfg(test)]
@@ -54,25 +54,25 @@ show them the serenity of the void.";
 
     #[test]
     fn test_md5() {
-        assert_eq!(hex::encode(MD5Hash::raw(&MD5Hash::digest_message(EMPTY_MESSAGE.as_bytes()))),
+        assert_eq!(hex::encode(&MD5Hash::digest_message(EMPTY_MESSAGE.as_bytes()).raw()),
                    "d41d8cd98f00b204e9800998ecf8427e");
 
-        assert_eq!(hex::encode(MD5Hash::raw(&MD5Hash::digest_message(SOME_TEXT.as_bytes()))),
+        assert_eq!(hex::encode(&MD5Hash::digest_message(SOME_TEXT.as_bytes()).raw()),
                    "9cf653b21b12797c80f769c8a753c360");
 
-        assert_eq!(hex::encode(MD5Hash::raw(&MD5Hash::digest_message(LONG_TEXT.as_bytes()))),
+        assert_eq!(hex::encode(&MD5Hash::digest_message(LONG_TEXT.as_bytes()).raw()),
                    "b3e7bf1f1a433eae2001458324ccb2e8");
     }
 
     #[test]
     fn test_sha1() {
-        assert_eq!(hex::encode(SHA1Hash::raw(&SHA1Hash::digest_message(EMPTY_MESSAGE.as_bytes()))),
+        assert_eq!(hex::encode(&SHA1Hash::digest_message(EMPTY_MESSAGE.as_bytes()).raw()),
                    "da39a3ee5e6b4b0d3255bfef95601890afd80709");
 
-        assert_eq!(hex::encode(SHA1Hash::raw(&SHA1Hash::digest_message(SOME_TEXT.as_bytes()))),
+        assert_eq!(hex::encode(&SHA1Hash::digest_message(SOME_TEXT.as_bytes()).raw()),
                    "931bec5eec465b2e742deafbdcae2681820a4ac9");
 
-        assert_eq!(hex::encode(SHA1Hash::raw(&SHA1Hash::digest_message(LONG_TEXT.as_bytes()))),
+        assert_eq!(hex::encode(&SHA1Hash::digest_message(LONG_TEXT.as_bytes()).raw()),
                    "3f7febf27a733691542c1ac367f2d2692f47c24f");
     }
 

@@ -167,13 +167,13 @@ impl HashFunction for MD5Hash {
 
 
     /// Generates a raw ``[u8; 16]`` array from the current hash state.
-    fn raw(hash: &Self) -> Box<[u8]> {
+    fn raw(&self) -> Box<[u8]> {
         unsafe {
             mem::transmute::<[u32; 4], [u8; 16]>([
-                u32::from_le(hash.0),
-                u32::from_le(hash.1),
-                u32::from_le(hash.2),
-                u32::from_le(hash.3)])
+                u32::from_le(self.0),
+                u32::from_le(self.1),
+                u32::from_le(self.2),
+                u32::from_le(self.3)])
         }.to_vec().into()
     }
 }

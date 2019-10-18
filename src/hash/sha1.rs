@@ -154,14 +154,14 @@ impl HashFunction for SHA1Hash {
 
 
     /// Generates a raw ``[u8; 20]`` array from the current hash state.
-    fn raw(hash: &Self) -> Box<[u8]> {
+    fn raw(&self) -> Box<[u8]> {
             unsafe {
                 mem::transmute::<[u32; 5], [u8; 20]>([
-                    u32::from_be(hash.a),
-                    u32::from_be(hash.b),
-                    u32::from_be(hash.c),
-                    u32::from_be(hash.d),
-                    u32::from_be(hash.e)])
+                    u32::from_be(self.a),
+                    u32::from_be(self.b),
+                    u32::from_be(self.c),
+                    u32::from_be(self.d),
+                    u32::from_be(self.e)])
             }.to_vec().into()
     }
 }
