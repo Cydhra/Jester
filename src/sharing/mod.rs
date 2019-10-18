@@ -4,7 +4,7 @@ pub mod shamir_secret_sharing;
 
 /// A threshold secret sharing scheme that generates n shares of a given secret and requires t <= n of those shares
 /// to reconstruct the secret. The secret is of type `T` and shares are a `Vec<S>`.
-trait ThresholdSecretSharingScheme<T, S> {
+pub trait ThresholdSecretSharingScheme<T, S> {
     /// Generate shares of a secret demanding that at least `threshold` shares must be available to reconstruct the
     /// secret.
     /// #Parameters:

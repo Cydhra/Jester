@@ -4,7 +4,7 @@ use rand::{CryptoRng, RngCore};
 use crate::sharing::ThresholdSecretSharingScheme;
 
 /// Shamir's secret sharing scheme that uses polynomials of `threshold` degree and solutions of it as shares.
-struct ShamirSecretSharing;
+pub struct ShamirSecretSharing;
 
 impl<T> ThresholdSecretSharingScheme<T, T> for ShamirSecretSharing
     where T: Num + Clone {
