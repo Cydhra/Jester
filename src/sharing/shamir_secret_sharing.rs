@@ -1,4 +1,5 @@
 use num::Num;
+use rand::{CryptoRng, RngCore};
 
 use crate::sharing::ThresholdSecretSharingScheme;
 
@@ -11,13 +12,15 @@ impl<T> ThresholdSecretSharingScheme<T, T> for ShamirSecretSharing
     /// the solution `secret = f(0)` of the polynomial and each share is the solution of `f(i)` where `i - 1` is the
     /// index within the returned vector.
     /// #Parameters:
+    /// - `rng` a cryptographically secure random number generator.
     /// - `secret` an instance of `T`
     /// - `count` how many shares to generate
     /// - `threshold` how many shares are required to reconstruct the secret
     ///
     /// #Output
     /// Returns a vector of `count` shares
-    fn generate_shares(secret: &T, count: usize, threshold: usize) -> Vec<T> {
+    fn generate_shares<R>(rng: &mut R, secret: &T, count: usize, threshold: usize) -> Vec<T>
+        where R: RngCore + CryptoRng {
         unimplemented!()
     }
 

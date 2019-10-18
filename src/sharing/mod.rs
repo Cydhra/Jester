@@ -1,19 +1,22 @@
+use rand::{CryptoRng, RngCore};
+
 pub mod shamir_secret_sharing;
 
 /// A threshold secret sharing scheme that generates n shares of a given secret and requires t <= n of those shares
 /// to reconstruct the secret. The secret is of type `T` and shares are a `Vec<S>`.
 trait ThresholdSecretSharingScheme<T, S> {
-
     /// Generate shares of a secret demanding that at least `threshold` shares must be available to reconstruct the
     /// secret.
     /// #Parameters:
+    /// - `rng` a cryptographically secure random number generator.
     /// - `secret` an instance of `T`
     /// - `count` how many shares to generate
     /// - `threshold` how many shares are required to reconstruct the secret
     ///
     /// #Output
     /// Returns a vector of `count` shares
-    fn generate_shares(secret: &T, count: usize, threshold: usize) -> Vec<S>;
+    fn generate_shares<R>(rng: &mut R, secret: &T, count: usize, threshold: usize) -> Vec<S>
+        where R: RngCore + CryptoRng;
 
     /// Take a vector of shares and reconstruct the secret from them. At least `threshold` shares must be present,
     /// otherwise the secret cannot be reconstructed
