@@ -29,7 +29,7 @@ pub fn hmac<H>(key: &[u8], message: &[u8]) -> Box<[u8]>
     inner_message.append(&mut message.to_vec());
     outer_message.append(&mut H::raw(&H::digest_message(&inner_message)).into());
 
-    H::raw(&H::digest_message(&outer_message)).into()
+    H::raw(&H::digest_message(&outer_message))
 }
 
 fn pad(key: &[u8], length: usize) -> Box<[u8]> {
