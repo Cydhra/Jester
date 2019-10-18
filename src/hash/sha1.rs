@@ -111,7 +111,6 @@ impl SHA1Hash {
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 
         let relevant_data = &input[message_blocks_count * BLOCK_LENGTH_BYTES..];
-        eprintln!("{} ({})", message_length_bits, relevant_data.len());
 
         let mut last_block = [0u8; BLOCK_LENGTH_BYTES];
         // append the last part of message to the block
@@ -129,7 +128,7 @@ impl SHA1Hash {
             // append the message length in bits
             for i in 0..8 {
                 // note, that the number is appended backwards because it must be handled as a big endian number
-                overflow_block[BLOCK_LENGTH_BYTES - i] = (message_length_bits >> (i * 8) as u64) as u8;
+                overflow_block[BLOCK_LENGTH_BYTES - i - 1] = (message_length_bits >> (i * 8) as u64) as u8;
             }
 
             self.round_function(&last_block);
