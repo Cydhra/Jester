@@ -8,7 +8,12 @@ use crate::array_util;
 const BLOCK_LENGTH_BYTES: usize = 64;
 
 /// The initial state for any SHA1 hash. From here, all blocks are applied.
-pub const INITIAL: SHA1Hash = SHA1Hash { a: 0x67452301, b: 0xEFCDAB89, c: 0x98BADCFE, d: 0x10325476, e: 0xC3D2E1F0 };
+pub const INITIAL: SHA1Hash = SHA1Hash {
+    a: 0x67452301,
+    b: 0xEFCDAB89,
+    c: 0x98BADCFE,
+    d: 0x10325476,
+    e: 0xC3D2E1F0 };
 
 #[derive(Debug, Copy, Clone)]
 pub struct SHA1Hash {
@@ -21,6 +26,12 @@ pub struct SHA1Hash {
 
 impl SHA1Hash {
     /// Digest a full message of arbitrary size.
+    /// #Parameters
+    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
+    ///
+    /// #Output
+    /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
+    /// length was appended to the input data for digestion.
     pub fn digest_message(input: &[u8]) -> Self {
         let mut hash_state = INITIAL;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
@@ -36,6 +47,14 @@ impl SHA1Hash {
         return hash_state;
     }
 
+    /// SHA-1 round function that corresponds to the digestion of exactly one block of data. This block must be
+    /// exactly `BLOCK_LENGTH_BYTES` long.
+    /// #Parameters
+    /// - `input_block` a block of data to be digested
+    ///
+    /// #Output
+    /// While not returning a value, it changes the state of this hash object to the new state after digestion of
+    /// `input_block`
     pub fn round_function(&mut self, input_block: &[u8]) {
         assert_eq!(input_block.len(), BLOCK_LENGTH_BYTES);
 
@@ -86,11 +105,13 @@ impl SHA1Hash {
         self.e = self.e.wrapping_add(round_state.e);
     }
 
+    /// Digest the last (partial) block of input data.
     pub fn digest_last_block(&mut self, input: &[u8]) {
         let message_length_bits: u64 = (input.len() as u64) * 8u64;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 
         let relevant_data = &input[message_blocks_count * BLOCK_LENGTH_BYTES..];
+        eprintln!("{} ({})", message_length_bits, relevant_data.len());
 
         let mut last_block = [0u8; BLOCK_LENGTH_BYTES];
         // append the last part of message to the block
@@ -124,7 +145,7 @@ impl SHA1Hash {
         }
     }
 
-    /// Generates a raw ``[u8; 16]`` array from the current hash state.
+    /// Generates a raw ``[u8; 20]`` array from the current hash state.
     pub fn to_raw(&self) -> [u8; 20] {
         unsafe {
             mem::transmute::<[u32; 5], [u8; 20]>([

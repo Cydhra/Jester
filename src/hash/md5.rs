@@ -47,7 +47,13 @@ static MAGIC_SINUS_SCALARS: [u32; 64] = [
 
 impl MD5Hash {
 
-    /// Digest a whole message of arbitrary size
+    /// Digest a full message of arbitrary size.
+    /// #Parameters
+    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
+    ///
+    /// #Output
+    /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
+    /// length was appended to the input data for digestion.
     pub fn digest_message(input: &[u8]) -> Self {
         let mut hash_state = INITIAL;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
