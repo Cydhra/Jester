@@ -1,4 +1,4 @@
-use num::Num;
+pub mod shamir_secret_sharing;
 
 /// A threshold secret sharing scheme that generates n shares of a given secret and requires t <= n of those shares
 /// to reconstruct the secret. The secret is of type `T` and shares are a `Vec<S>`.
