@@ -14,7 +14,7 @@ mod tests {
 
     const LONG_TEXT: &str = "God? You'd assert that a God exhibits neither shame nor despair. And yet I stand unchanged; \
 a tragic husk with bloodied hands. I surrendered my future, the prospect of a family to carry your poison. \
-You misled me. I renounce your control!
+You misled me. I renounce your control! \
 Fidelity has always been your greatest quality, Ragnier. I swear to you to my son, all of your shame and guilt, \
 all of your sins, they will collapse into the abyss we all race towards. Share that truth with the world, share it \
 with the provinces and the valley and the empires in the west. Show them your conviction, \
@@ -29,7 +29,7 @@ show them the serenity of the void.";
                    "9cf653b21b12797c80f769c8a753c360");
 
         assert_eq!(hex::encode(MD5Hash::digest_message(LONG_TEXT.as_bytes()).to_raw()),
-                   "406ef8da29b4c6c7e64ff1d163ad7b90");
+                   "b3e7bf1f1a433eae2001458324ccb2e8");
     }
 
     #[test]
@@ -41,6 +41,6 @@ show them the serenity of the void.";
                    "931bec5eec465b2e742deafbdcae2681820a4ac9");
 
         assert_eq!(hex::encode(SHA1Hash::digest_message(LONG_TEXT.as_bytes()).to_raw()),
-                   "6b73c6677532abff53f5ccb966f4dbdb8b1c2185");
+                   "3f7febf27a733691542c1ac367f2d2692f47c24f");
     }
 }
