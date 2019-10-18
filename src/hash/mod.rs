@@ -1,7 +1,15 @@
 pub mod md5;
 pub mod sha1;
 
+/// Any hash function that can digest arbitrarily sized input.
 pub trait HashFunction {
+    /// Digest a full message of arbitrary size.
+    /// #Parameters
+    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
+    ///
+    /// #Output
+    /// Returns the hash state of the digested input data. No assumptions can be made about wether the state can be
+    /// used for further operations in the hash algorithm.
     fn digest_message(input: &[u8]) -> Self;
 }
 
