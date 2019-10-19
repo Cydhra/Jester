@@ -1,0 +1,10 @@
+[package]
+name = "jester_algebra_derive"
+version = "0.1.0"
+authors = ["Cydhra <ubezl@student.kit.edu>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
