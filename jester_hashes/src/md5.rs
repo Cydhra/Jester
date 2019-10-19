@@ -4,8 +4,9 @@
 use std::mem;
 use std::mem::size_of;
 
-use crate::array_util;
-use crate::hash::HashFunction;
+use jester_util;
+
+use crate::HashFunction;
 
 /// the hash block length in bytes
 const BLOCK_LENGTH_BYTES: usize = 64;
@@ -58,7 +59,7 @@ impl MD5Hash {
         assert_eq!(input.len(), BLOCK_LENGTH_BYTES);
 
         let mut input_block = [0u32; BLOCK_LENGTH_DOUBLE_WORDS];
-        unsafe { array_util::align_to_u32a_le(&mut input_block, input) };
+        unsafe { jester_util::align_to_u32a_le(&mut input_block, input) };
 
         let mut round_state = *self;
 

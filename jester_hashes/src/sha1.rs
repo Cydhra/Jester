@@ -3,8 +3,7 @@
 use std::mem;
 use std::mem::size_of;
 
-use crate::array_util;
-use crate::hash::HashFunction;
+use crate::HashFunction;
 
 const BLOCK_LENGTH_BYTES: usize = 64;
 
@@ -39,7 +38,7 @@ impl SHA1Hash {
         assert_eq!(input_block.len(), BLOCK_LENGTH_BYTES);
 
         let mut extended_block = [0u32; 80];
-        unsafe { array_util::align_to_u32a_be(&mut extended_block[0..16], input_block) };
+        unsafe { jester_util::align_to_u32a_be(&mut extended_block[0..16], input_block) };
 
         for i in 16..80 {
             extended_block[i] = u32::rotate_left(

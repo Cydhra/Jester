@@ -1,12 +1,2 @@
-[package]
-name = "jester"
-version = "0.1.0"
-authors = ["Cydhra <ubezl@student.kit.edu>"]
-edition = "2018"
-
-[dependencies]
-num = "^0.2.0"
-rand = "^0.7.2"
-
-[dev-dependencies]
-hex = "0.3.2"
+[workspace]
+members = ["jester_algebra", "jester_hashes", "jester_sharing", "jester_util"]

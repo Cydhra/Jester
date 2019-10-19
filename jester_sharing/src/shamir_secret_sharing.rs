@@ -1,7 +1,7 @@
 use num::Num;
 use rand::{CryptoRng, RngCore};
 
-use crate::sharing::ThresholdSecretSharingScheme;
+use crate::ThresholdSecretSharingScheme;
 
 /// Shamir's secret sharing scheme that uses polynomials of `threshold` degree and solutions of it as shares.
 pub struct ShamirSecretSharing;
@@ -42,8 +42,9 @@ impl<T> ThresholdSecretSharingScheme<T, T> for ShamirSecretSharing
 mod tests {
     use num::Num;
 
-    use crate::sharing::shamir_secret_sharing::ShamirSecretSharing;
-    use crate::sharing::ThresholdSecretSharingScheme;
+    use crate::ThresholdSecretSharingScheme;
+
+    use super::ShamirSecretSharing;
 
     #[test]
     fn test() {
