@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 jester_algebra_derive = { path = "jester_algebra_derive" }
+num = "0.2.0"
