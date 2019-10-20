@@ -11,3 +11,4 @@ proc-macro = true
 syn = "1.0.5"
 quote = "1.0.2"
 num = "0.2.0"
+num-bigint = { version = "0.2.3", features = ["rand"]}
