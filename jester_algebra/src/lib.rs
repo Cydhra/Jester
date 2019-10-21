@@ -1,4 +1,4 @@
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
 #[macro_use]
 extern crate mashup;
@@ -171,6 +171,10 @@ macro_rules! prime_fields {
                     fn field_prime() -> Self {
                         "prime" $name.clone()
                     }
+
+                    fn as_uint(&self) -> BigUint {
+                        self.0.clone()
+                    }
                 }
             }
         )*
@@ -182,13 +186,15 @@ pub trait PrimeField: Num + Sum + Product + From<BigUint> {
     /// Returns the prime number that is base to this numeric field and its operations.
     fn field_prime() -> Self;
 
+    /// Returns the prime as a `BigUint` instance
+    fn as_uint(&self) -> BigUint;
+
     /// Generate a random member of this field. This method must ensure that guarantees for the distribution of
     /// generated field elements is not worse than guarantees by the underlying random number generator.
     /// #Parameters
     /// - `rng` a random number generator to be used for generating the element
-    fn generate_random_member<R: RngCore + CryptoRng + RandBigInt>(rng: &mut R) -> Self
-        where num::BigUint: std::convert::From<Self> {
-        rng.gen_biguint_below(&Self::field_prime().into()).into()
+    fn generate_random_member<R: RngCore + CryptoRng + RandBigInt>(rng: &mut R) -> Self {
+        rng.gen_biguint_below(&Self::field_prime().as_uint()).into()
     }
 }
 
