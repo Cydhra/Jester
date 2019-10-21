@@ -1,154 +1,171 @@
+#[macro_use]
+extern crate mashup;
+
 use std::iter::{Product, Sum};
 
 use num::{BigUint, Num};
 use num_bigint::RandBigInt;
 use rand::{CryptoRng, RngCore};
 
-macro_rules! gen_prime_field {
-    ($name:ident, $prime:literal) => {
-        static PRIME_NUMBER: once_cell::sync::Lazy<$name> = once_cell::sync::Lazy::new(|| {
-            // do not parse this to a struct instance directly, because parsing that actually requires
-            // this constant to be already present. Parse the big integer from string instead.
-            $name(std::str::FromStr::from_str($prime).unwrap())
-        });
-
-        impl std::ops::Add<$name> for $name {
-            type Output = $name;
-
-            fn add(self, rhs: $name) -> Self::Output {
-                let mut sum = self.0.clone().add(&rhs.0);
-                std::ops::RemAssign::rem_assign(&mut sum, PRIME_NUMBER.0.clone());
-                $name(sum)
-            }
-        }
-
-        impl std::ops::Sub<$name> for $name {
-            type Output = $name;
-
-            fn sub(self, rhs: $name) -> Self::Output {
-                let mut sum = ::std::ops::Sub::sub(&self.0.clone(), &rhs.0);
-                ::std::ops::RemAssign::rem_assign(&mut sum, PRIME_NUMBER.0.clone());
-                $name(sum)
-            }
-        }
-
-        impl std::ops::Div<$name> for $name {
-            type Output = $name;
-
-            fn div(self, rhs: $name) -> Self::Output {
-                let mut tmp = ::std::ops::Div::div(&self.0.clone(), &rhs.0);
-                ::std::ops::RemAssign::rem_assign(&mut tmp, PRIME_NUMBER.0.clone());
-                $name(tmp)
-            }
-        }
-
-        impl std::ops::Mul<$name> for $name {
-            type Output = $name;
-
-            fn mul(self, rhs: $name) -> Self::Output {
-                let mut tmp = ::std::ops::Mul::mul(&self.0.clone(), &rhs.0);
-                ::std::ops::RemAssign::rem_assign(&mut tmp, PRIME_NUMBER.0.clone());
-                $name(tmp)
-            }
-        }
-
-        impl std::ops::Rem<$name> for $name {
-            type Output = Self;
-
-            fn rem(self, rhs: $name) -> $name {
-                let mut tmp = self.0.clone();
-                ::std::ops::RemAssign::rem_assign(&mut tmp, &rhs.0);
-                $name(tmp)
-            }
-        }
-
-        impl num::Zero for $name {
-            fn zero() -> Self {
-                $name(num_bigint::BigUint::zero())
-            }
-
-            fn is_zero(&self) -> bool {
-                self.0.is_zero()
-            }
-        }
-
-        impl num::One for $name {
-            fn one() -> Self {
-                $name(num_bigint::BigUint::one())
-            }
-
-            fn is_one(&self) -> bool
-                where Self: PartialEq, {
-                self.0.is_one()
-            }
-        }
-
-        impl num::Num for $name {
-            type FromStrRadixErr = num::bigint::ParseBigIntError;
-
-            fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-                num_bigint::BigUint::from_str_radix(str, radix).map(|i| {
-                    let n = i.modpow(&::num::One::one(), &PRIME_NUMBER.0);
-                    $name(n)
-                })
-            }
-        }
-
-        impl std::iter::Sum for $name {
-            fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
-                let mut tmp: $name = ::num::Zero::zero();
-                for x in iter {
-                    tmp = tmp + x;
-                }
-                tmp
-            }
-        }
-
-        impl std::iter::Product for $name {
-            fn product<I: Iterator<Item=Self>>(iter: I) -> Self {
-                let mut tmp: $name = ::num::One::one();
-                for x in iter {
-                    tmp = tmp * x;
-                }
-                tmp
-            }
-        }
-
-        impl From<$name> for BigUint {
-            fn from(v: $name) -> Self {
-                v.0
-            }
-        }
-
-        impl From<BigUint> for $name {
-            fn from(v: BigUint) -> Self {
-                let mut g = v;
-                ::std::ops::RemAssign::rem_assign(&mut g, &PRIME_NUMBER.0);
-                $name(g)
-            }
-        }
-
-        impl PrimeField for $name {
-            fn field_prime() -> Self {
-                PRIME_NUMBER.clone()
-            }
-        }
-    }
-}
-
 #[macro_export]
-macro_rules! prime_field {
-    ($name:ident, $prime:literal) => {
-        #[derive(Debug, Clone, PartialEq, PartialOrd)]
-        struct $name(num_bigint::BigUint);
+macro_rules! prime_fields {
+    ($($v:vis $name:ident($prime:literal)),*) => {
 
-        gen_prime_field!($name, $prime);
-    };
-    (pub $name:ident, $prime:literal) => {
-        #[derive(Debug, Clone, PartialEq, PartialOrd)]
-        pub struct $name(num_bigint::BigUint);
+        mashup! {
+            $(
+                m["prime" $name] = PRIME_NUMBER_ $name;
+            )*
+        }
 
-        gen_prime_field!($name, $prime);
+        $(
+            m! {
+                static "prime" $name: once_cell::sync::Lazy<$name> = once_cell::sync::Lazy::new(|| {
+                    // do not parse this to a struct instance directly, because parsing that actually requires
+                    // this constant to be already present. Parse the big integer from string instead.
+                    $name(std::str::FromStr::from_str($prime).unwrap())
+                });
+            }
+
+            m! {
+                #[derive(Clone, Debug, PartialEq, PartialOrd)]
+                $v struct $name(num_bigint::BigUint);
+
+                impl std::ops::Add<$name> for $name {
+                    type Output = $name;
+
+                    fn add(self, rhs: $name) -> Self::Output {
+                        let mut sum = self.0.clone().add(&rhs.0);
+                        std::ops::RemAssign::rem_assign(&mut sum, "prime" $name.0.clone());
+                        $name(sum)
+                    }
+                }
+            }
+
+            m! {
+                impl std::ops::Sub<$name> for $name {
+                    type Output = $name;
+
+                    fn sub(self, rhs: $name) -> Self::Output {
+                        let mut sum = ::std::ops::Sub::sub(&self.0.clone(), &rhs.0);
+                        ::std::ops::RemAssign::rem_assign(&mut sum, "prime" $name.0.clone());
+                        $name(sum)
+                    }
+                }
+            }
+            m! {
+                impl std::ops::Div<$name> for $name {
+                    type Output = $name;
+
+                    fn div(self, rhs: $name) -> Self::Output {
+                        let mut tmp = ::std::ops::Div::div(&self.0.clone(), &rhs.0);
+                        ::std::ops::RemAssign::rem_assign(&mut tmp, "prime" $name.0.clone());
+                        $name(tmp)
+                    }
+                }
+            }
+            m! {
+                impl std::ops::Mul<$name> for $name {
+                    type Output = $name;
+
+                    fn mul(self, rhs: $name) -> Self::Output {
+                        let mut tmp = ::std::ops::Mul::mul(&self.0.clone(), &rhs.0);
+                        ::std::ops::RemAssign::rem_assign(&mut tmp, "prime" $name.0.clone());
+                        $name(tmp)
+                    }
+                }
+            }
+            m! {
+                impl std::ops::Rem<$name> for $name {
+                    type Output = Self;
+
+                    fn rem(self, rhs: $name) -> $name {
+                        let mut tmp = self.0.clone();
+                        ::std::ops::RemAssign::rem_assign(&mut tmp, &rhs.0);
+                        $name(tmp)
+                    }
+                }
+            }
+            m! {
+                impl num::Zero for $name {
+                    fn zero() -> Self {
+                        $name(num_bigint::BigUint::zero())
+                    }
+
+                    fn is_zero(&self) -> bool {
+                        self.0.is_zero()
+                    }
+                }
+            }
+            m! {
+                impl num::One for $name {
+                    fn one() -> Self {
+                        $name(num_bigint::BigUint::one())
+                    }
+
+                    fn is_one(&self) -> bool
+                        where Self: PartialEq, {
+                        self.0.is_one()
+                    }
+                }
+            }
+            m! {
+                impl num::Num for $name {
+                    type FromStrRadixErr = num::bigint::ParseBigIntError;
+
+                    fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+                        num_bigint::BigUint::from_str_radix(str, radix).map(|i| {
+                            let n = i.modpow(&::num::One::one(), &"prime" $name.0);
+                            $name(n)
+                        })
+                    }
+                }
+            }
+            m! {
+                impl std::iter::Sum for $name {
+                    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
+                        let mut tmp: $name = ::num::Zero::zero();
+                        for x in iter {
+                            tmp = tmp + x;
+                        }
+                        tmp
+                    }
+                }
+            }
+            m! {
+                impl std::iter::Product for $name {
+                    fn product<I: Iterator<Item=Self>>(iter: I) -> Self {
+                        let mut tmp: $name = ::num::One::one();
+                        for x in iter {
+                            tmp = tmp * x;
+                        }
+                        tmp
+                    }
+                }
+            }
+            m! {
+                impl From<$name> for BigUint {
+                    fn from(v: $name) -> Self {
+                        v.0
+                    }
+                }
+            }
+            m! {
+                impl From<BigUint> for $name {
+                    fn from(v: BigUint) -> Self {
+                        let mut g = v;
+                        ::std::ops::RemAssign::rem_assign(&mut g, &"prime" $name.0);
+                        $name(g)
+                    }
+                }
+            }
+            m! {
+                impl PrimeField for $name {
+                    fn field_prime() -> Self {
+                        "prime" $name.clone()
+                    }
+                }
+            }
+        )*
     }
 }
 
@@ -167,8 +184,19 @@ trait PrimeField: Num + Sum + Product + From<BigUint> {
     }
 }
 
-// generate an example prime field struct
-prime_field!(pub Mersenne89, "618970019642690137449562111");
+// generate an example prime field structs
+prime_fields!(
+    pub Mersenne2("3"),
+    pub Mersenne3("7"),
+    pub Mersenne5("31"),
+    pub Mersenne13("8191"),
+    pub Mersenne17("131071"),
+    pub Mersenne19("524287"),
+    pub Mersenne31("2147483647"),
+    pub Mersenne61("2305843009213693951"),
+    pub Mersenne89("618970019642690137449562111"),
+    pub Mersenne107("162259276829213363391578010288127"),
+    pub Mersenne127("170141183460469231731687303715884105727"));
 
 #[cfg(test)]
 mod tests {
