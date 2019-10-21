@@ -1,3 +1,9 @@
+use std::iter::{Product, Sum};
+
+use num::{BigUint, Num};
+use num_bigint::RandBigInt;
+use rand::{CryptoRng, RngCore};
+
 macro_rules! gen_prime_field {
     ($name:ident, $prime:literal) => {
         static PRIME_NUMBER: once_cell::sync::Lazy<$name> = once_cell::sync::Lazy::new(|| {
@@ -107,6 +113,26 @@ macro_rules! gen_prime_field {
                 tmp
             }
         }
+
+        impl From<$name> for BigUint {
+            fn from(v: $name) -> Self {
+                v.0
+            }
+        }
+
+        impl From<BigUint> for $name {
+            fn from(v: BigUint) -> Self {
+                let mut g = v;
+                ::std::ops::RemAssign::rem_assign(&mut g, &PRIME_NUMBER.0);
+                $name(g)
+            }
+        }
+
+        impl PrimeField for $name {
+            fn field_prime() -> Self {
+                PRIME_NUMBER.clone()
+            }
+        }
     }
 }
 
@@ -126,12 +152,23 @@ macro_rules! prime_field {
     }
 }
 
-trait PrimeField {
-    const PRIME: Self;
+/// This trait describes an integer type for large prime field arithmetic.
+trait PrimeField: Num + Sum + Product + From<BigUint> {
+    /// Returns the prime number that is base to this numeric field and its operations.
+    fn field_prime() -> Self;
+
+    /// Generate a random member of this field. This method must ensure that guarantees for the distribution of
+    /// generated field elements is not worse than guarantees by the underlying random number generator.
+    /// #Parameters
+    /// - `rng` a random number generator to be used for generating the element
+    fn generate_random_member<R: RngCore + CryptoRng + RandBigInt>(rng: &mut R) -> Self
+        where num::BigUint: std::convert::From<Self> {
+        rng.gen_biguint_below(&Self::field_prime().into()).into()
+    }
 }
 
+// generate an example prime field struct
 prime_field!(pub Mersenne89, "618970019642690137449562111");
-
 
 #[cfg(test)]
 mod tests {
