@@ -4,8 +4,9 @@
 extern crate mashup;
 
 use std::iter::{Product, Sum};
+use std::ops::Sub;
 
-use num::{BigUint, Num};
+use num::{BigUint, FromPrimitive, Num, Zero};
 use num_bigint::RandBigInt;
 use rand::{CryptoRng, RngCore};
 
@@ -167,6 +168,21 @@ macro_rules! prime_fields {
                 }
             }
             m! {
+                impl num::FromPrimitive for $name {
+                    fn from_i64(n: i64) -> Option<Self> {
+                        if n < 0 {
+                            BigUint::from_i64(-n).map(|a| ::std::ops::Sub::sub("prime" $name.clone(), a.into()))
+                        } else {
+                            num_bigint::BigUint::from_i64(n).map(|o| o.into())
+                        }
+                    }
+
+                    fn from_u64(n: u64) -> Option<Self> {
+                        num_bigint::BigUint::from_u64(n).map(|o| o.into())
+                    }
+                }
+            }
+            m! {
                 impl PrimeField for $name {
                     fn field_prime() -> Self {
                         "prime" $name.clone()
@@ -182,7 +198,7 @@ macro_rules! prime_fields {
 }
 
 /// This trait describes an integer type for large prime field arithmetic.
-pub trait PrimeField: Num + Sum + Product + From<BigUint> {
+pub trait PrimeField: Num + Sum + Product + From<BigUint> + FromPrimitive {
     /// Returns the prime number that is base to this numeric field and its operations.
     fn field_prime() -> Self;
 
