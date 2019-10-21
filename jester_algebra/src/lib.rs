@@ -198,12 +198,30 @@ macro_rules! prime_fields {
 }
 
 /// This trait describes an integer type for large prime field arithmetic.
-pub trait PrimeField: Num + Sum + Product + From<BigUint> + FromPrimitive {
+pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitive {
     /// Returns the prime number that is base to this numeric field and its operations.
     fn field_prime() -> Self;
 
     /// Returns the prime as a `BigUint` instance
     fn as_uint(&self) -> BigUint;
+
+    /// Calculate the multiplicative inverse of this element.
+    fn inverse(&self) -> Self {
+        let (_, _, inverse) = Self::extended_greatest_common_divisor(&Self::field_prime(), self);
+        inverse
+    }
+
+    /// The extended euclidean algorithm within this integer prime field.
+    fn extended_greatest_common_divisor(a: &Self, b: &Self) -> (Self, Self, Self) {
+        if b.is_zero() {
+            (a.clone(), Self::one(), Self::zero())
+        } else {
+            let (d, s, t) = Self::extended_greatest_common_divisor(b, &a.clone().rem(b.clone()));
+            let delta = (a.clone().div(b.clone())).mul(t.clone());
+            (d, t, s - delta)
+        }
+    }
+
 
     /// Generate a random member of this field. This method must ensure that guarantees for the distribution of
     /// generated field elements is not worse than guarantees by the underlying random number generator.
