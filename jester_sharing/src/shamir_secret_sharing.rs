@@ -80,9 +80,24 @@ mod tests {
     }
 
     #[test]
-    fn test() {
+    fn test_reconstruction() {
         let shares = ShamirSecretSharing::generate_shares(&mut thread_rng(),
                                                           &Mersenne89::from_usize(20).unwrap(), 5, 5);
         assert_eq!(ShamirSecretSharing::reconstruct_secret(&shares, 5), Mersenne89::from_usize(20).unwrap());
+    }
+
+    #[test]
+    fn test_linearity() {
+        let shares = ShamirSecretSharing::generate_shares(&mut thread_rng(),
+                                                          &Mersenne89::from_usize(20).unwrap(), 2, 2);
+        let shares_2 = ShamirSecretSharing::generate_shares(&mut thread_rng(),
+                                                          &Mersenne89::from_usize(40).unwrap(), 2, 2);
+
+        let addition: Vec<_> = shares.into_iter()
+            .zip(shares_2)
+            .map(|((x1, y1), (_, y2))| (x1, y1.clone() + y2.clone()))
+            .collect();
+
+        assert_eq!(ShamirSecretSharing::reconstruct_secret(&addition, 2), Mersenne89::from_usize(60).unwrap());
     }
 }
