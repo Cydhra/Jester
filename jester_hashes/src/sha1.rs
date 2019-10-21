@@ -148,7 +148,7 @@ impl HashFunction for SHA1Hash {
         // pad and digest last block
         hash_state.digest_last_block(input);
 
-        return hash_state;
+        hash_state
     }
 
 

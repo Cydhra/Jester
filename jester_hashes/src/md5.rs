@@ -163,7 +163,7 @@ impl HashFunction for MD5Hash {
         // pad and digest last block
         hash_state.digest_last_block(input);
 
-        return hash_state;
+        hash_state
     }
 
 
