@@ -48,7 +48,13 @@ macro_rules! prime_fields {
                     type Output = $name;
 
                     fn sub(self, rhs: $name) -> Self::Output {
-                        let mut sum = ::std::ops::Sub::sub(&self.0.clone(), &rhs.0);
+                        let mut sum = if self >= rhs {
+                            ::std::ops::Sub::sub(&self.0.clone(), &rhs.0)
+                        } else {
+                            let inverse = ::std::ops::Sub::sub("prime" $name.clone(), rhs.clone());
+                            ::std::ops::Add::add(&self.0.clone(), &inverse.0)
+                        };
+
                         ::std::ops::RemAssign::rem_assign(&mut sum, "prime" $name.0.clone());
                         $name(sum)
                     }
