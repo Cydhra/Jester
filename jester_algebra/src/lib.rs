@@ -1,5 +1,3 @@
-use num::{BigInt, One, Zero};
-
 #[macro_export]
 macro_rules! prime_field {
     ($name:ident, $prime:literal) => {
@@ -94,7 +92,7 @@ macro_rules! prime_field {
 
             fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
                 num_bigint::BigInt::from_str_radix(str, radix).map(|i| {
-                    let n = i.modpow(&BigInt::one(), &PRIME_NUMBER.0);
+                    let n = i.modpow(&::num::One::one(), &PRIME_NUMBER.0);
                     $name(n)
                 })
             }
@@ -102,7 +100,7 @@ macro_rules! prime_field {
 
         impl std::iter::Sum for $name {
             fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
-                let mut tmp = $name::zero();
+                let mut tmp: $name = ::num::Zero::zero();
                 for x in iter {
                     tmp = tmp + x;
                 }
@@ -112,7 +110,7 @@ macro_rules! prime_field {
 
         impl std::iter::Product for $name {
             fn product<I: Iterator<Item=Self>>(iter: I) -> Self {
-                let mut tmp = $name::one();
+                let mut tmp: $name = ::num::One::one();
                 for x in iter {
                     tmp = tmp * x;
                 }
@@ -129,7 +127,7 @@ prime_field!(Mersenne89, "618970019642690137449562111");
 
 #[cfg(test)]
 mod tests {
-    use num::Num;
+    use num::{Num, One};
 
     use super::*;
 
