@@ -1,14 +1,10 @@
-#[macro_export]
-macro_rules! prime_field {
+macro_rules! gen_prime_field {
     ($name:ident, $prime:literal) => {
         static PRIME_NUMBER: once_cell::sync::Lazy<$name> = once_cell::sync::Lazy::new(|| {
             // do not parse this to a struct instance directly, because parsing that actually requires
             // this constant to be already present. Parse the big integer from string instead.
             $name(std::str::FromStr::from_str($prime).unwrap())
         });
-
-        #[derive(Debug, Clone, PartialEq, PartialOrd)]
-        pub struct $name(num_bigint::BigUint);
 
         impl std::ops::Add<$name> for $name {
             type Output = $name;
@@ -114,9 +110,27 @@ macro_rules! prime_field {
     }
 }
 
-trait PrimeField {}
+#[macro_export]
+macro_rules! prime_field {
+    ($name:ident, $prime:literal) => {
+        #[derive(Debug, Clone, PartialEq, PartialOrd)]
+        struct $name(num_bigint::BigUint);
 
-prime_field!(Mersenne89, "618970019642690137449562111");
+        gen_prime_field!($name, $prime);
+    };
+    (pub $name:ident, $prime:literal) => {
+        #[derive(Debug, Clone, PartialEq, PartialOrd)]
+        pub struct $name(num_bigint::BigUint);
+
+        gen_prime_field!($name, $prime);
+    }
+}
+
+trait PrimeField {
+    const PRIME: Self;
+}
+
+prime_field!(pub Mersenne89, "618970019642690137449562111");
 
 
 #[cfg(test)]
