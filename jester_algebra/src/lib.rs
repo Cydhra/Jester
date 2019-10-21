@@ -8,7 +8,7 @@ macro_rules! prime_field {
         });
 
         #[derive(Debug, Clone, PartialEq, PartialOrd)]
-        pub struct $name(num_bigint::BigInt);
+        pub struct $name(num_bigint::BigUint);
 
         impl std::ops::Add<$name> for $name {
             type Output = $name;
@@ -16,9 +16,6 @@ macro_rules! prime_field {
             fn add(self, rhs: $name) -> Self::Output {
                 let mut sum = self.0.clone().add(&rhs.0);
                 std::ops::RemAssign::rem_assign(&mut sum, PRIME_NUMBER.0.clone());
-                if num::Signed::is_negative(&sum) {
-                    std::ops::AddAssign::add_assign(&mut sum, &PRIME_NUMBER.0)
-                }
                 $name(sum)
             }
         }
@@ -29,9 +26,6 @@ macro_rules! prime_field {
             fn sub(self, rhs: $name) -> Self::Output {
                 let mut sum = ::std::ops::Sub::sub(&self.0.clone(), &rhs.0);
                 ::std::ops::RemAssign::rem_assign(&mut sum, PRIME_NUMBER.0.clone());
-                if ::num::Signed::is_negative(&sum) {
-                    ::std::ops::AddAssign::add_assign(&mut sum, &PRIME_NUMBER.0);
-                }
                 $name(sum)
             }
         }
@@ -68,7 +62,7 @@ macro_rules! prime_field {
 
         impl num::Zero for $name {
             fn zero() -> Self {
-                $name(num_bigint::BigInt::zero())
+                $name(num_bigint::BigUint::zero())
             }
 
             fn is_zero(&self) -> bool {
@@ -78,7 +72,7 @@ macro_rules! prime_field {
 
         impl num::One for $name {
             fn one() -> Self {
-                $name(num_bigint::BigInt::one())
+                $name(num_bigint::BigUint::one())
             }
 
             fn is_one(&self) -> bool
@@ -91,7 +85,7 @@ macro_rules! prime_field {
             type FromStrRadixErr = num::bigint::ParseBigIntError;
 
             fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-                num_bigint::BigInt::from_str_radix(str, radix).map(|i| {
+                num_bigint::BigUint::from_str_radix(str, radix).map(|i| {
                     let n = i.modpow(&::num::One::one(), &PRIME_NUMBER.0);
                     $name(n)
                 })
