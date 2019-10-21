@@ -178,7 +178,7 @@ macro_rules! prime_fields {
 }
 
 /// This trait describes an integer type for large prime field arithmetic.
-trait PrimeField: Num + Sum + Product + From<BigUint> {
+pub trait PrimeField: Num + Sum + Product + From<BigUint> {
     /// Returns the prime number that is base to this numeric field and its operations.
     fn field_prime() -> Self;
 
