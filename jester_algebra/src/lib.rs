@@ -1,3 +1,5 @@
+#![recursion_limit="256"]
+
 #[macro_use]
 extern crate mashup;
 
@@ -22,7 +24,7 @@ macro_rules! prime_fields {
                 static "prime" $name: once_cell::sync::Lazy<$name> = once_cell::sync::Lazy::new(|| {
                     // do not parse this to a struct instance directly, because parsing that actually requires
                     // this constant to be already present. Parse the big integer from string instead.
-                    $name(std::str::FromStr::from_str($prime).unwrap())
+                    $name(std::str::FromStr::from_str(stringify!($prime)).unwrap())
                 });
             }
 
@@ -186,17 +188,17 @@ trait PrimeField: Num + Sum + Product + From<BigUint> {
 
 // generate an example prime field structs
 prime_fields!(
-    pub Mersenne2("3"),
-    pub Mersenne3("7"),
-    pub Mersenne5("31"),
-    pub Mersenne13("8191"),
-    pub Mersenne17("131071"),
-    pub Mersenne19("524287"),
-    pub Mersenne31("2147483647"),
-    pub Mersenne61("2305843009213693951"),
-    pub Mersenne89("618970019642690137449562111"),
-    pub Mersenne107("162259276829213363391578010288127"),
-    pub Mersenne127("170141183460469231731687303715884105727"));
+    pub Mersenne2(3),
+    pub Mersenne3(7),
+    pub Mersenne5(31),
+    pub Mersenne13(8191),
+    pub Mersenne17(131071),
+    pub Mersenne19(524287),
+    pub Mersenne31(2147483647),
+    pub Mersenne61(2305843009213693951),
+    pub Mersenne89(618970019642690137449562111),
+    pub Mersenne107(162259276829213363391578010288127),
+    pub Mersenne127(170141183460469231731687303715884105727));
 
 #[cfg(test)]
 mod tests {
