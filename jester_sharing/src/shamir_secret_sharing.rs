@@ -11,7 +11,7 @@ use crate::ThresholdSecretSharingScheme;
 pub struct ShamirSecretSharing;
 
 impl<T> ThresholdSecretSharingScheme<T, (usize, T)> for ShamirSecretSharing
-    where T: PrimeField + Clone {
+    where T: PrimeField {
     /// Generate a random polynomial `f` and `count` solutions `sn = f(n)` where `n != 0` as shares. The secret is
     /// the solution `secret = f(0)` of the polynomial and each share is the solution of `f(i)` where `i - 1` is the
     /// index within the returned vector.
