@@ -79,3 +79,19 @@ pub trait PeerToPeerPartyScheme<T, S, P>
     /// Returns a future on the shares that other participants sent in return
     fn distribute_secret(&mut self, secret: T) -> Pin<Box<dyn Future<Output=Vec<S>> + Send>>;
 }
+
+/// A trait for a protocol for multiplication of (additive) linear shares with communication between parties.
+pub trait MultiplicationScheme<T, S, P>
+    where P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + PeerToPeerPartyScheme<T, S, P> {
+
+    /// Multiply two shares asynchronously.
+    /// #Parameters
+    /// - `protocol` a protocol for linear addition and peer to peer communication between parties
+    /// - `lhs` left multiplication factor
+    /// - `rhs` right multiplication factor
+    ///
+    /// #Output
+    /// Returns a future on the result share. The future does not hold the references `self` and `protocol`, so this
+    /// method can be called to multiply multiple values in parallel.
+    fn mul(&mut self, protocol: &mut P, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=T> + Send>>;
+}
