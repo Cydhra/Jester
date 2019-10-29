@@ -4,7 +4,7 @@ use rand::{CryptoRng, RngCore};
 
 use jester_algebra::PrimeField;
 
-use crate::{LinearSharingScheme, PeerToPeerPartyScheme, ThresholdSecretSharingScheme};
+use crate::{BroadcastCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ThresholdSecretSharingScheme};
 
 /// A protocol to generate a secret random number where every participant has a share on that number, but no
 /// participant learns the actual value of that number.
@@ -20,7 +20,7 @@ pub fn joint_random_number_sharing<R, T, S, P>(rng: &mut R, protocol: &mut P) ->
     where R: RngCore + CryptoRng,
           T: PrimeField,
           S: 'static,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + PeerToPeerPartyScheme<T, S, P> {
+          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + BroadcastCommunicationScheme<T, S, P> {
     let rand_partial = T::generate_random_member(rng);
     let all_shares_future = protocol.distribute_secret(rand_partial);
 

@@ -55,10 +55,10 @@ pub trait LinearSharingScheme<S> {
     fn sum_shares(shares: &[S]) -> Option<S>;
 }
 
-/// A trait marking a scheme where `N` party members communicate peer to peer to each other. Secrets can be revealed by
-/// sending the own share to all participants and new secrets can be distributed by sending one share of it to all
-/// members
-pub trait PeerToPeerPartyScheme<T, S, P>
+/// A trait marking a scheme where `N` party members communicate to each other via a broadcast or a peer to peer
+/// where every client knows every other client. Secrets can be revealed by sending the own share to all participants
+/// and new secrets can be distributed by sending one share of it to all members
+pub trait BroadcastCommunicationScheme<T, S, P>
     where P: ThresholdSecretSharingScheme<T, S> {
 
     /// All parties reveal their shares thus the secret can be reconstructed as soon as all shares were received.
@@ -82,7 +82,7 @@ pub trait PeerToPeerPartyScheme<T, S, P>
 
 /// A trait for a protocol for multiplication of (additive) linear shares with communication between parties.
 pub trait MultiplicationScheme<T, S, P>
-    where P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + PeerToPeerPartyScheme<T, S, P> {
+    where P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + BroadcastCommunicationScheme<T, S, P> {
 
     /// Multiply two shares asynchronously.
     /// #Parameters
