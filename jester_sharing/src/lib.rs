@@ -93,5 +93,5 @@ pub trait MultiplicationScheme<T, S, P>
     /// #Output
     /// Returns a future on the result share. The future does not hold the references `self` and `protocol`, so this
     /// method can be called to multiply multiple values in parallel.
-    fn mul(&mut self, protocol: &mut P, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=T> + Send>>;
+    fn mul(&mut self, protocol: &mut P, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=S> + Send>>;
 }
