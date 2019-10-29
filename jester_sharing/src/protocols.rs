@@ -4,7 +4,7 @@ use rand::{CryptoRng, RngCore};
 
 use jester_algebra::PrimeField;
 
-use crate::{BroadcastCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ThresholdSecretSharingScheme};
+use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ThresholdSecretSharingScheme};
 
 /// A protocol to generate a secret random number where every participant has a share on that number, but no
 /// participant learns the actual value of that number.
@@ -20,7 +20,7 @@ pub fn joint_random_number_sharing<R, T, S, P>(rng: &mut R, protocol: &mut P) ->
     where R: RngCore + CryptoRng,
           T: PrimeField,
           S: 'static,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + BroadcastCommunicationScheme<T, S> {
+          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> {
     let rand_partial = T::generate_random_member(rng);
     let all_shares_future = protocol.distribute_secret(rand_partial);
 
@@ -47,7 +47,7 @@ pub fn joint_random_number_sharing<R, T, S, P>(rng: &mut R, protocol: &mut P) ->
 pub fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &S, lhs: &S, rhs: &S) -> impl Future<Output=S>
     where T: PrimeField,
           S: Clone,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + BroadcastCommunicationScheme<T, S> + MultiplicationScheme<T, S> {
+          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> + MultiplicationScheme<T, S> {
     let operands_difference = P::sub_shares(lhs, rhs);
 
     // copy rhs to move a copy into the future
