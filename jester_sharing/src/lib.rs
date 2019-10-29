@@ -43,7 +43,6 @@ pub trait ThresholdSecretSharingScheme<T, S> {
 /// A trait for sharing schemes whose shares addition is linear thus enabling the addition of shares of this
 /// scheme without further protocol state required.
 pub trait LinearSharingScheme<S> {
-
     /// Sum two shares resulting in a new share of their secrets' sum.
     fn add_shares(lhs: &S, rhs: &S) -> S;
 
@@ -58,9 +57,7 @@ pub trait LinearSharingScheme<S> {
 /// A trait marking a scheme where `N` party members communicate to each other via a broadcast or a peer to peer
 /// where every client knows every other client. Secrets can be revealed by sending the own share to all participants
 /// and new secrets can be distributed by sending one share of it to all members
-pub trait BroadcastCommunicationScheme<T, S, P>
-    where P: ThresholdSecretSharingScheme<T, S> {
-
+pub trait BroadcastCommunicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> {
     /// All parties reveal their shares thus the secret can be reconstructed as soon as all shares were received.
     /// #Parameters
     /// - `share` this client's own share
@@ -81,17 +78,14 @@ pub trait BroadcastCommunicationScheme<T, S, P>
 }
 
 /// A trait for a protocol for multiplication of (additive) linear shares with communication between parties.
-pub trait MultiplicationScheme<T, S, P>
-    where P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + BroadcastCommunicationScheme<T, S, P> {
-
+pub trait MultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + BroadcastCommunicationScheme<T, S> {
     /// Multiply two shares asynchronously.
     /// #Parameters
-    /// - `protocol` a protocol for linear addition and peer to peer communication between parties
     /// - `lhs` left multiplication factor
     /// - `rhs` right multiplication factor
     ///
     /// #Output
-    /// Returns a future on the result share. The future does not hold the references `self` and `protocol`, so this
-    /// method can be called to multiply multiple values in parallel.
-    fn mul(&mut self, protocol: &mut P, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=S> + Send>>;
+    /// Returns a future on the result share. The future does not hold the references `self`, so this method can be
+    /// called to multiply multiple values in parallel.
+    fn mul(&mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=S> + Send>>;
 }
