@@ -4,9 +4,8 @@
 extern crate mashup;
 
 use std::iter::{Product, Sum};
-use std::ops::Sub;
 
-use num::{BigUint, FromPrimitive, Num, Zero};
+use num::{BigUint, FromPrimitive, Num};
 use num_bigint::RandBigInt;
 use rand::{CryptoRng, RngCore};
 
