@@ -7,12 +7,17 @@ use jester_algebra::PrimeField;
 
 use crate::{LinearSharingScheme, ThresholdSecretSharingScheme};
 
-/// Shamir's secret sharing scheme that uses polynomials of `threshold` degree and solutions of it as shares.
-pub struct ShamirSecretSharing;
+/// A trait marking a special instance of a additive linear threshold secret sharing scheme invented by Adi Shamir. A
+/// protocol implementing this trait does not have to provide implementations for `ThresholdSecretSharingScheme` nor
+/// `LinearSharingScheme` as they are provided by this module.
+pub trait ShamirSecretSharingScheme<T>: ThresholdSecretSharingScheme<T, (usize, T)> + LinearSharingScheme<(usize, T)> {
+    // this is a marker trait
+}
 
 /// Shamir's secret sharing scheme is linear for addition. Addition implemented by simply delegating the calls to `T`
-impl<T> LinearSharingScheme<(usize, T)> for ShamirSecretSharing
-    where T: PrimeField {
+impl<T, P> LinearSharingScheme<(usize, T)> for P
+    where T: PrimeField,
+          P: ShamirSecretSharingScheme<T> {
     fn add_shares(lhs: &(usize, T), rhs: &(usize, T)) -> (usize, T) {
         assert_eq!(lhs.0.clone(), rhs.0.clone());
         (lhs.0, lhs.1.clone() + rhs.1.clone())
@@ -29,7 +34,7 @@ impl<T> LinearSharingScheme<(usize, T)> for ShamirSecretSharing
         } else {
             // assert that all shares are of the same x value
             assert!(shares.iter().fold(shares.get(0).and_then(|x| Some(x.0)),
-                      |akk, val| if akk == Some(val.0) { akk } else { None }).is_some());
+                                       |akk, val| if akk == Some(val.0) { akk } else { None }).is_some());
 
             Some((shares.get(0).unwrap().0, shares.iter()
                 .map(|(_, y)| y.clone())
@@ -38,8 +43,9 @@ impl<T> LinearSharingScheme<(usize, T)> for ShamirSecretSharing
     }
 }
 
-impl<T> ThresholdSecretSharingScheme<T, (usize, T)> for ShamirSecretSharing
-    where T: PrimeField {
+impl<T, P> ThresholdSecretSharingScheme<T, (usize, T)> for P
+    where T: PrimeField,
+          P: ShamirSecretSharingScheme<T> {
     /// Generate a random polynomial `f` and `count` solutions `sn = f(n)` where `n != 0` as shares. The secret is
     /// the solution `secret = f(0)` of the polynomial and each share is the solution of `f(i)` where `i - 1` is the
     /// index within the returned vector.
@@ -97,28 +103,31 @@ mod tests {
 
     use jester_algebra::Mersenne89;
 
+    use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
     use crate::ThresholdSecretSharingScheme;
 
-    use super::ShamirSecretSharing;
+    struct ExampleProtocol;
+
+    impl ShamirSecretSharingScheme<Mersenne89> for ExampleProtocol {}
 
     #[test]
     fn test_generator() {
-        let shares = ShamirSecretSharing::generate_shares(&mut thread_rng(), &Mersenne89::one(), 5, 5);
+        let shares = ExampleProtocol::generate_shares(&mut thread_rng(), &Mersenne89::one(), 5, 5);
         assert_eq!(shares.len(), 5)
     }
 
     #[test]
     fn test_reconstruction() {
-        let shares = ShamirSecretSharing::generate_shares(&mut thread_rng(),
+        let shares = ExampleProtocol::generate_shares(&mut thread_rng(),
                                                           &Mersenne89::from_usize(20).unwrap(), 5, 5);
-        assert_eq!(ShamirSecretSharing::reconstruct_secret(&shares, 5), Mersenne89::from_usize(20).unwrap());
+        assert_eq!(ExampleProtocol::reconstruct_secret(&shares, 5), Mersenne89::from_usize(20).unwrap());
     }
 
     #[test]
     fn test_linearity() {
-        let shares = ShamirSecretSharing::generate_shares(&mut thread_rng(),
+        let shares = ExampleProtocol::generate_shares(&mut thread_rng(),
                                                           &Mersenne89::from_usize(20).unwrap(), 2, 2);
-        let shares_2 = ShamirSecretSharing::generate_shares(&mut thread_rng(),
+        let shares_2 = ExampleProtocol::generate_shares(&mut thread_rng(),
                                                             &Mersenne89::from_usize(40).unwrap(), 2, 2);
 
         let addition: Vec<_> = shares.into_iter()
@@ -126,6 +135,6 @@ mod tests {
             .map(|((x1, y1), (_, y2))| (x1, y1.clone() + y2.clone()))
             .collect();
 
-        assert_eq!(ShamirSecretSharing::reconstruct_secret(&addition, 2), Mersenne89::from_usize(60).unwrap());
+        assert_eq!(ExampleProtocol::reconstruct_secret(&addition, 2), Mersenne89::from_usize(60).unwrap());
     }
 }
