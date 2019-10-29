@@ -10,8 +10,33 @@ use crate::{LinearSharingScheme, ThresholdSecretSharingScheme};
 /// Shamir's secret sharing scheme that uses polynomials of `threshold` degree and solutions of it as shares.
 pub struct ShamirSecretSharing;
 
-/// Shamir's secret sharing scheme is linear for addition. Implement this as a marker
-impl LinearSharingScheme for ShamirSecretSharing {}
+/// Shamir's secret sharing scheme is linear for addition. Addition implemented by simply delegating the calls to `T`
+impl<T> LinearSharingScheme<(usize, T)> for ShamirSecretSharing
+    where T: PrimeField {
+    fn add_shares(lhs: &(usize, T), rhs: &(usize, T)) -> (usize, T) {
+        assert_eq!(lhs.0.clone(), rhs.0.clone());
+        (lhs.0, lhs.1.clone() + rhs.1.clone())
+    }
+
+    fn sub_shares(lhs: &(usize, T), rhs: &(usize, T)) -> (usize, T) {
+        assert_eq!(lhs.0.clone(), rhs.0.clone());
+        (lhs.0, lhs.1.clone() - rhs.1.clone())
+    }
+
+    fn sum_shares(shares: &[(usize, T)]) -> Option<(usize, T)> {
+        if shares.is_empty() {
+            None
+        } else {
+            // assert that all shares are of the same x value
+            assert!(shares.iter().fold(shares.get(0).and_then(|x| Some(x.0)),
+                      |akk, val| if akk == Some(val.0) { akk } else { None }).is_some());
+
+            Some((shares.get(0).unwrap().0, shares.iter()
+                .map(|(_, y)| y.clone())
+                .sum()))
+        }
+    }
+}
 
 impl<T> ThresholdSecretSharingScheme<T, (usize, T)> for ShamirSecretSharing
     where T: PrimeField {
@@ -94,7 +119,7 @@ mod tests {
         let shares = ShamirSecretSharing::generate_shares(&mut thread_rng(),
                                                           &Mersenne89::from_usize(20).unwrap(), 2, 2);
         let shares_2 = ShamirSecretSharing::generate_shares(&mut thread_rng(),
-                                                          &Mersenne89::from_usize(40).unwrap(), 2, 2);
+                                                            &Mersenne89::from_usize(40).unwrap(), 2, 2);
 
         let addition: Vec<_> = shares.into_iter()
             .zip(shares_2)
