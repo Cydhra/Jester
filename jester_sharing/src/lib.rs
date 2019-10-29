@@ -1,6 +1,13 @@
+#![feature(const_generics)]
+
+use std::future::Future;
+use std::pin::Pin;
+
 use rand::{CryptoRng, RngCore};
 
 pub mod shamir_secret_sharing;
+
+pub mod protocols;
 
 /// A threshold secret sharing scheme that generates n shares of a given secret and requires t <= n of those shares
 /// to reconstruct the secret. The secret is of type `T` and shares are a `Vec<S>`.
@@ -44,4 +51,29 @@ pub trait LinearSharingScheme<S> {
     /// Sum a slice of shares resulting in a `Some` with a new share of their secrets' sum or `None` if the slice was
     /// empty.
     fn sum_shares(shares: &[S]) -> Option<S>;
+}
+
+/// A trait marking a scheme where `N` party members communicate peer to peer to each other. Secrets can be revealed by
+/// sending the own share to all participants and new secrets can be distributed by sending one share of it to all
+/// members
+pub trait PeerToPeerPartyScheme<T, S, P, const N: usize>
+    where P: ThresholdSecretSharingScheme<T, S> {
+
+    /// All parties reveal their shares thus the secret can be reconstructed as soon as all shares were received.
+    /// #Parameters
+    /// - `share` this client's own share
+    ///
+    /// #Output
+    /// Returns a future on the reconstructed secret
+    fn reveal_shares(&mut self, share: S) -> Pin<Box<dyn Future<Output=T> + Send>>;
+
+    /// A secret is created with exactly `N` shares and one is sent to each participant. Shares of other participants
+    /// are collected and returned.
+    ///
+    /// #Parameters
+    /// - `secret` a secret compatible to a `ThresholdSecretSharingScheme` that shall be shared
+    ///
+    /// #Output
+    /// Returns a future on the shares that other participants sent in return
+    fn distribute_secret(&mut self, secret: T) -> Pin<Box<dyn Future<Output=[S; N]> + Send>>;
 }
