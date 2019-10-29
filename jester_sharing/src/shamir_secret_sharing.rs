@@ -5,10 +5,13 @@ use rand::{CryptoRng, RngCore};
 
 use jester_algebra::PrimeField;
 
-use crate::ThresholdSecretSharingScheme;
+use crate::{LinearSharingScheme, ThresholdSecretSharingScheme};
 
 /// Shamir's secret sharing scheme that uses polynomials of `threshold` degree and solutions of it as shares.
 pub struct ShamirSecretSharing;
+
+/// Shamir's secret sharing scheme is linear for addition. Implement this as a marker
+impl LinearSharingScheme for ShamirSecretSharing {}
 
 impl<T> ThresholdSecretSharingScheme<T, (usize, T)> for ShamirSecretSharing
     where T: PrimeField {

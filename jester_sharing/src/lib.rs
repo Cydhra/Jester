@@ -30,3 +30,7 @@ pub trait ThresholdSecretSharingScheme<T, S> {
     /// instance of `T` that is reconstructed from the shares
     fn reconstruct_secret(shares: &[S], threshold: usize) -> T;
 }
+
+/// A marker trait for sharing schemes whose shares addition is linear thus enabling the addition of shares of this
+/// scheme without further protocols required.
+pub trait LinearSharingScheme {}
