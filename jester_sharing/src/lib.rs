@@ -1,5 +1,3 @@
-#![feature(const_generics)]
-
 use std::future::Future;
 use std::pin::Pin;
 
@@ -60,7 +58,7 @@ pub trait LinearSharingScheme<S> {
 /// A trait marking a scheme where `N` party members communicate peer to peer to each other. Secrets can be revealed by
 /// sending the own share to all participants and new secrets can be distributed by sending one share of it to all
 /// members
-pub trait PeerToPeerPartyScheme<T, S, P, const N: usize>
+pub trait PeerToPeerPartyScheme<T, S, P>
     where P: ThresholdSecretSharingScheme<T, S> {
 
     /// All parties reveal their shares thus the secret can be reconstructed as soon as all shares were received.
@@ -79,5 +77,5 @@ pub trait PeerToPeerPartyScheme<T, S, P, const N: usize>
     ///
     /// #Output
     /// Returns a future on the shares that other participants sent in return
-    fn distribute_secret(&mut self, secret: T) -> Pin<Box<dyn Future<Output=[S; N]> + Send>>;
+    fn distribute_secret(&mut self, secret: T) -> Pin<Box<dyn Future<Output=Vec<S>> + Send>>;
 }
