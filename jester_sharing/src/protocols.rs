@@ -4,7 +4,7 @@ use rand::{CryptoRng, RngCore};
 
 use jester_algebra::PrimeField;
 
-use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ThresholdSecretSharingScheme};
+use crate::{CliqueCommunicationScheme, LinearSharingScheme, ThresholdSecretSharingScheme, TwoStageMultiplicationScheme};
 
 /// A protocol to generate a secret random number where every participant has a share on that number, but no
 /// participant learns the actual value of that number.
@@ -30,7 +30,9 @@ pub fn joint_random_number_sharing<R, T, S, P>(rng: &mut R, protocol: &mut P) ->
 }
 
 /// A protocol for the joint selection of either side of a ternary expression `condition ? lhs : rhs` without
-/// any participant learning the value of `condition` or the expression chosen by the protocol.
+/// any participant learning the value of `condition` or the expression chosen by the protocol. This protocol cannot
+/// be invoked in parallel, as it uses a two-stage multiplication protocol.
+///
 /// #Parameters
 /// - `protocol` an instance of the sub-protocols used. It must be a `ThresholdSecretSharingScheme` with additive
 /// linear shares and communication between all participants. Furthermore multiplication by communication must be
@@ -44,17 +46,14 @@ pub fn joint_random_number_sharing<R, T, S, P>(rng: &mut R, protocol: &mut P) ->
 /// #Output
 /// Returns a future on either `lhs` or `rhs`, but in a rerandomized share, so a participant cannot learn which one
 /// was taken.
-pub fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &S, lhs: &S, rhs: &S) -> impl Future<Output=S>
+pub async fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &S, lhs: &S, rhs: &S) -> S
     where T: PrimeField,
-          S: Clone,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> + MultiplicationScheme<T, S> {
+          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> + TwoStageMultiplicationScheme<T, S> {
     let operands_difference = P::sub_shares(lhs, rhs);
 
     // copy rhs to move a copy into the future
     let right_copy = rhs.clone();
-    let product = protocol.mul(condition, &operands_difference);
-
-    async move {
-        P::add_shares(&product.await, &right_copy)
-    }
+    let state = protocol.mul_stage_one(condition, &operands_difference).await;
+    let product = protocol.mul_stage_two(state).await;
+    P::add_shares(&product, &right_copy)
 }

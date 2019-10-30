@@ -77,15 +77,19 @@ pub trait CliqueCommunicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> {
     fn distribute_secret(&mut self, secret: T) -> Pin<Box<dyn Future<Output=Vec<S>> + Send>>;
 }
 
-/// A trait for a protocol for multiplication of (additive) linear shares with communication between parties.
-pub trait MultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> {
-    /// Multiply two shares asynchronously.
-    /// #Parameters
-    /// - `lhs` left multiplication factor
-    /// - `rhs` right multiplication factor
-    ///
-    /// #Output
-    /// Returns a future on the result share. The future does not hold the references `self`, so this method can be
-    /// called to multiply multiple values in parallel.
-    fn mul(&mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=S> + Send>>;
+/// A trait for a protocol for multiplication of (additive) linear shares with communication between parties that
+/// requires two stages. Since there is no efficient multiplication scheme with less stages, this trait is used by
+/// most protocols in this crate. It would be nice to actually abstract the amount of interactions between parties
+/// away from the trait interface, however this would inevitably bind the reference to `self` to the future returned
+/// by the multiplication function. This, in turn, would hinder callers from calling the multiplication protocol in
+/// parallel.
+pub trait TwoStageMultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> {
+    type IntermediateState;
+
+    /// Asynchronously multiply two shares. This function will return a future on `Self::IntermediateState` which
+    /// will have to be passed to `mul_stage_two` to finish the multiplication protocol.
+    fn mul_stage_one(&mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=Self::IntermediateState> + Send>>;
+
+    /// Second stage of the multiplication.
+    fn mul_stage_two(&mut self, state: Self::IntermediateState) -> Pin<Box<dyn Future<Output=S> + Send>>;
 }
