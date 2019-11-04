@@ -77,35 +77,23 @@ pub trait CliqueCommunicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> {
     fn distribute_secret(&mut self, secret: T) -> Pin<Box<dyn Future<Output=Vec<S>> + Send>>;
 }
 
-/// A trait for a protocol for multiplication of (additive) linear shares with communication between parties that
-/// requires two stages. Since there is no efficient multiplication scheme with less stages, this trait is used by
-/// most protocols in this crate. It would be nice to actually abstract the amount of interactions between parties
-/// away from the trait interface, however this would inevitably bind the reference to `self` to the future returned
-/// by the multiplication function. This, in turn, would hinder callers from calling the multiplication protocol in
-/// parallel.
-pub trait TwoStageMultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> {
-    type IntermediateState;
+/// A multiplication scheme. This multiplication scheme is potentially very complex and requires at least one round
+/// of communication which in turn requires it to capture a mutable reference to protocol it is defined on. This in
+/// turn makes it impossible to parallelize the multiplication. However, there is an extension to this scheme
+/// (`ParallelMultiplicationScheme`) which takes multiple parameters and performs all multiplications in parallel.
+pub trait MultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> {
 
-    /// Asynchronously multiply two shares. This function will return a future on `Self::IntermediateState` which
-    /// will have to be passed to `mul_stage_two` to finish the multiplication protocol.
-    fn prepare_multiplication(&mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=Self::IntermediateState> + Send>>;
-
-    /// Second stage of the multiplication.
-    fn finish_multiplication(&mut self, state: Self::IntermediateState) -> Pin<Box<dyn Future<Output=S> + Send>>;
+    /// Multiply two shares `lhs * rhs` asynchronously. This method cannot be used in parallel, because it moves the
+    /// mutable reference to `self` into the future returned.
+    fn multiply<'a>(&'a mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=S> + Send + 'a>>;
 }
 
-/// An extension to `TwoStageMultiplicationScheme` that can prepare and finish multiple pairs of multiplication at
-/// once, allowing for parallel multiplication despite of mutable references being used.
-pub trait ParallelTwoStageMultiplicationScheme<T, S>: TwoStageMultiplicationScheme<T, S> {
+/// An extension to `MultiplicationScheme` that overcomes its limitation by simply taking multiple pairs of shares
+/// that are to be multiplied at once and multiplying them in parallel.
+pub trait ParallelMultiplicationScheme<T, S>: MultiplicationScheme<T, S> {
 
-    /// Prepare multiple multiplications by multiplying the first with the second element for each tuple given as
-    /// `pairs`. The returned future will result in a `Vec` of `Self::IntermediateState` - one for each tuple (order
-    /// must be retained).
-    fn prepare_multiple_multiplications(&mut self, pairs: &[(S, S)])
-        -> Pin<Box<dyn Future<Output=Vec<Self::IntermediateState>> + Send>>;
-
-    /// Finish a set of multiplications represented by their `Self::IntermediateState`. Returns a future with a
-    /// vector of all results.
-    fn finish_multiple_multiplications(&mut self, states: &[Self::IntermediateState])
-        -> Pin<Box<dyn Future<Output=Vec<S>> + Send>>;
+    /// Multiply a set of pairs of shares in parallel. This method cannot be called in parallel, which is why it
+    /// takes a slice of pairs as argument. Simply call this method once with all pairs of values that are to be
+    /// multiplied.
+    fn parallel_multiply<'a>(&'a mut self, pairs: &[(S, S)]) -> Pin<Box<dyn Future<Output=Vec<S>> + Send + 'a>>;
 }

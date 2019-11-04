@@ -4,7 +4,7 @@ use rand::{CryptoRng, RngCore};
 
 use jester_algebra::PrimeField;
 
-use crate::{CliqueCommunicationScheme, LinearSharingScheme, ThresholdSecretSharingScheme, TwoStageMultiplicationScheme};
+use crate::{CliqueCommunicationScheme, LinearSharingScheme, ThresholdSecretSharingScheme, MultiplicationScheme};
 
 /// A protocol to generate a secret random number where every participant has a share on that number, but no
 /// participant learns the actual value of that number.
@@ -48,12 +48,10 @@ pub fn joint_random_number_sharing<R, T, S, P>(rng: &mut R, protocol: &mut P) ->
 /// was taken.
 pub async fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &S, lhs: &S, rhs: &S) -> S
     where T: PrimeField,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> + TwoStageMultiplicationScheme<T, S> {
+          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> + MultiplicationScheme<T, S> {
     let operands_difference = P::sub_shares(lhs, rhs);
 
     // copy rhs to move a copy into the future
-    let right_copy = rhs.clone();
-    let state = protocol.prepare_multiplication(condition, &operands_difference).await;
-    let product = protocol.finish_multiplication(state).await;
-    P::add_shares(&product, &right_copy)
+    let product = protocol.multiply(condition, &operands_difference).await;
+    P::add_shares(&product, rhs.clone())
 }
