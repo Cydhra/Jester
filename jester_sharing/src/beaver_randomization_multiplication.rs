@@ -16,9 +16,9 @@ pub trait BeaverRandomizationMultiplication<T, S>: ParallelMultiplicationScheme<
     /// Get the reconstruction threshold of the threshold secret sharing scheme used beneath this scheme.
     fn get_reconstruction_threshold(&self) -> usize;
 
-    /// Obtain a random triple of shares `([a], [b], [c])` where `c = a * b` holds. Every participant must use shares
+    /// Obtain random triples of shares `([a], [b], [c])` where `c = a * b` holds. Every participant must use shares
     /// of the same triple during the same multiplication. This function cannot be called in parallel.
-    fn obtain_beaver_triple<'a>(&'a mut self) -> Pin<Box<dyn Future<Output=(S, S, S)> + Send + 'a>>;
+    fn obtain_beaver_triples<'a>(&'a mut self, count: usize) -> Pin<Box<dyn Future<Output=(S, S, S)> + Send + 'a>>;
 }
 
 impl<P, T, S> ParallelMultiplicationScheme<T, S> for P
@@ -44,7 +44,7 @@ impl<P, T, S> MultiplicationScheme<T, S> for P
 
         Box::pin(
             async move {
-                let (a, b, c) = self.obtain_beaver_triple().await;
+                let (a, b, c) = self.obtain_beaver_triples(1).await;
 
                 let epsilon_share = Self::sub_shares(&lhs, &a);
                 let delta_share = Self::sub_shares(&rhs, &b);
