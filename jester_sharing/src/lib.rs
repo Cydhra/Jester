@@ -88,8 +88,24 @@ pub trait TwoStageMultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S>
 
     /// Asynchronously multiply two shares. This function will return a future on `Self::IntermediateState` which
     /// will have to be passed to `mul_stage_two` to finish the multiplication protocol.
-    fn mul_stage_one(&mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=Self::IntermediateState> + Send>>;
+    fn prepare_multiplication(&mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=Self::IntermediateState> + Send>>;
 
     /// Second stage of the multiplication.
-    fn mul_stage_two(&mut self, state: Self::IntermediateState) -> Pin<Box<dyn Future<Output=S> + Send>>;
+    fn finish_multiplication(&mut self, state: Self::IntermediateState) -> Pin<Box<dyn Future<Output=S> + Send>>;
+}
+
+/// An extension to `TwoStageMultiplicationScheme` that can prepare and finish multiple pairs of multiplication at
+/// once, allowing for parallel multiplication despite of mutable references being used.
+pub trait ParallelTwoStageMultiplicationScheme<T, S>: TwoStageMultiplicationScheme<T, S> {
+
+    /// Prepare multiple multiplications by multiplying the first with the second element for each tuple given as
+    /// `pairs`. The returned future will result in a `Vec` of `Self::IntermediateState` - one for each tuple (order
+    /// must be retained).
+    fn prepare_multiple_multiplications(&mut self, pairs: &[(&S, &S)])
+        -> Pin<Box<dyn Future<Output=Vec<Self::IntermediateState>> + Send>>;
+
+    /// Finish a set of multiplications represented by their `Self::IntermediateState`. Returns a future with a
+    /// vector of all results.
+    fn finish_multiple_multiplications(&mut self, states: &[Self::IntermediateState])
+        -> Pin<Box<dyn Future<Output=Vec<S>> + Send>>;
 }

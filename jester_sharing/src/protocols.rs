@@ -53,7 +53,7 @@ pub async fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &
 
     // copy rhs to move a copy into the future
     let right_copy = rhs.clone();
-    let state = protocol.mul_stage_one(condition, &operands_difference).await;
-    let product = protocol.mul_stage_two(state).await;
+    let state = protocol.prepare_multiplication(condition, &operands_difference).await;
+    let product = protocol.finish_multiplication(state).await;
     P::add_shares(&product, &right_copy)
 }
