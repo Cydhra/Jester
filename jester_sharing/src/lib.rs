@@ -4,6 +4,7 @@ use std::pin::Pin;
 use rand::{CryptoRng, RngCore};
 
 pub mod shamir_secret_sharing;
+pub mod beaver_randomization_multiplication;
 
 pub mod protocols;
 
