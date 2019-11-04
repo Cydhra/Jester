@@ -12,7 +12,6 @@ use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme
 /// rerandomization technique.
 pub trait BeaverRandomizationMultiplication<T, S>: ParallelMultiplicationScheme<T, S>
     where T: PrimeField,
-          S: NumOps<T, S>,
           Self: ThresholdSecretSharingScheme<T, S> {
     /// Get the reconstruction threshold of the threshold secret sharing scheme used beneath this scheme.
     fn get_reconstruction_threshold(&self) -> usize;
@@ -24,8 +23,8 @@ pub trait BeaverRandomizationMultiplication<T, S>: ParallelMultiplicationScheme<
 
 impl<P, T, S> ParallelMultiplicationScheme<T, S> for P
     where T: PrimeField + Send + 'static,
-          S: NumOps<T, S> + NumOps + Clone + Send + Sync + 'static,
-          P: BeaverRandomizationMultiplication<T, S> + ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> +
+          S: Clone + Send + Sync + 'static,
+          P: BeaverRandomizationMultiplication<T, S> + ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> +
           CliqueCommunicationScheme<T, S> + MultiplicationScheme<T, S> + Send {
     fn parallel_multiply<'a>(&'a mut self, pairs: &[(S, S)]) -> Pin<Box<dyn Future<Output=Vec<S>> + Send + 'a>> {
         let pairs_clone = pairs.iter().map(|(l, r)| (l.clone(), r.clone())).collect::<Vec<(S, S)>>();
@@ -36,7 +35,7 @@ impl<P, T, S> ParallelMultiplicationScheme<T, S> for P
 
                 let multiplications = pairs_clone
                     .into_iter()
-                    .zip(beaver_triples)
+                    .zip(beaver_triples.clone())
                     .map(|((lhs, rhs), (a, b, c))| {
                         let epsilon_share = Self::sub_shares(&lhs, &a);
                         let delta_share = Self::sub_shares(&rhs, &b);
@@ -45,13 +44,24 @@ impl<P, T, S> ParallelMultiplicationScheme<T, S> for P
                         let epsilon = self.reveal_shares(epsilon_share);
 
                         async {
-                            let (delta, epsilon) = join!(delta, epsilon);
-                            c + b * epsilon.clone() + a * delta.clone() - epsilon.clone() * delta.clone()
+                            join!(delta, epsilon)
                         }
                     })
                     .collect::<Vec<_>>();
 
                 join_all(multiplications).await
+                    .into_iter()
+                    .zip(beaver_triples)
+                    .map(|((delta, epsilon), (a, b, c))|
+                        Self::sub_scalar(
+                            &Self::add_shares(
+                                &Self::add_shares(&c, &Self::multiply_scalar(&b, &epsilon)),
+                                &Self::multiply_scalar(&a, &delta),
+                            ),
+                            &(epsilon.clone() * delta.clone()),
+                        )
+                    )
+                    .collect()
             }
         )
     }
@@ -59,8 +69,8 @@ impl<P, T, S> ParallelMultiplicationScheme<T, S> for P
 
 impl<P, T, S> MultiplicationScheme<T, S> for P
     where T: PrimeField + Send,
-          S: NumOps<T, S> + NumOps + Clone + Send + Sync + 'static,
-          P: BeaverRandomizationMultiplication<T, S> + ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> +
+          S: Clone + Send + Sync + 'static,
+          P: BeaverRandomizationMultiplication<T, S> + ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> +
           CliqueCommunicationScheme<T, S> + Send {
     fn multiply<'a>(&'a mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=S> + Send + 'a>> {
         let lhs = lhs.clone();
@@ -78,7 +88,13 @@ impl<P, T, S> MultiplicationScheme<T, S> for P
                     self.reveal_shares(epsilon_share)
                 );
 
-                c + b * epsilon.clone() + a * delta.clone() - epsilon.clone() * delta.clone()
+                Self::sub_scalar(
+                    &Self::add_shares(
+                        &Self::add_shares(&c, &Self::multiply_scalar(&b, &epsilon)),
+                        &Self::multiply_scalar(&a, &delta),
+                    ),
+                    &(epsilon.clone() * delta.clone()),
+                )
             }
         )
     }

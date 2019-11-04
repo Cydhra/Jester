@@ -43,12 +43,21 @@ pub trait ThresholdSecretSharingScheme<T, S> {
 
 /// A trait for sharing schemes whose shares addition is linear thus enabling the addition of shares of this
 /// scheme without further protocol state required.
-pub trait LinearSharingScheme<S> {
+pub trait LinearSharingScheme<T, S> {
     /// Sum two shares resulting in a new share of their secrets' sum.
     fn add_shares(lhs: &S, rhs: &S) -> S;
 
     /// Subtract `rhs` from `lhs` resulting in a new share of their secrets' difference.
     fn sub_shares(lhs: &S, rhs: &S) -> S;
+
+    /// Add a scalar of the field `T` to the `share`
+    fn add_scalar(share: &S, scalar: &T) -> S;
+
+    /// Subtract a scalar of the field `T` from the `share`
+    fn sub_scalar(share: &S, scalar: &T) -> S;
+
+    /// Multiply a `share` that is defined over the field `T` with a `scalar` from `T`.
+    fn multiply_scalar(share: &S, scalar: &T) -> S;
 
     /// Sum a slice of shares resulting in a `Some` with a new share of their secrets' sum or `None` if the slice was
     /// empty.
@@ -82,8 +91,7 @@ pub trait CliqueCommunicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> {
 /// of communication which in turn requires it to capture a mutable reference to protocol it is defined on. This in
 /// turn makes it impossible to parallelize the multiplication. However, there is an extension to this scheme
 /// (`ParallelMultiplicationScheme`) which takes multiple parameters and performs all multiplications in parallel.
-pub trait MultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<S> + CliqueCommunicationScheme<T, S> {
-
+pub trait MultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> {
     /// Multiply two shares `lhs * rhs` asynchronously. This method cannot be used in parallel, because it moves the
     /// mutable reference to `self` into the future returned.
     fn multiply<'a>(&'a mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=S> + Send + 'a>>;
@@ -92,7 +100,6 @@ pub trait MultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + Linea
 /// An extension to `MultiplicationScheme` that overcomes its limitation by simply taking multiple pairs of shares
 /// that are to be multiplied at once and multiplying them in parallel.
 pub trait ParallelMultiplicationScheme<T, S>: MultiplicationScheme<T, S> {
-
     /// Multiply a set of pairs of shares in parallel. This method cannot be called in parallel, which is why it
     /// takes a slice of pairs as argument. Simply call this method once with all pairs of values that are to be
     /// multiplied.

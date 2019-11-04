@@ -10,12 +10,12 @@ use crate::{LinearSharingScheme, ThresholdSecretSharingScheme};
 /// A trait marking a special instance of a additive linear threshold secret sharing scheme invented by Adi Shamir. A
 /// protocol implementing this trait does not have to provide implementations for `ThresholdSecretSharingScheme` nor
 /// `LinearSharingScheme` as they are provided by this module.
-pub trait ShamirSecretSharingScheme<T>: ThresholdSecretSharingScheme<T, (usize, T)> + LinearSharingScheme<(usize, T)> {
+pub trait ShamirSecretSharingScheme<T>: ThresholdSecretSharingScheme<T, (usize, T)> + LinearSharingScheme<T, (usize, T)> {
     // this is a marker trait
 }
 
 /// Shamir's secret sharing scheme is linear for addition. Addition implemented by simply delegating the calls to `T`
-impl<T, P> LinearSharingScheme<(usize, T)> for P
+impl<T, P> LinearSharingScheme<T, (usize, T)> for P
     where T: PrimeField,
           P: ShamirSecretSharingScheme<T> {
     fn add_shares(lhs: &(usize, T), rhs: &(usize, T)) -> (usize, T) {
@@ -26,6 +26,18 @@ impl<T, P> LinearSharingScheme<(usize, T)> for P
     fn sub_shares(lhs: &(usize, T), rhs: &(usize, T)) -> (usize, T) {
         assert_eq!(lhs.0.clone(), rhs.0.clone());
         (lhs.0, lhs.1.clone() - rhs.1.clone())
+    }
+
+    fn add_scalar(share: &(usize, T), scalar: &T) -> (usize, T) {
+        (share.0, share.1.clone() + scalar.clone())
+    }
+
+    fn sub_scalar(share: &(usize, T), scalar: &T) -> (usize, T) {
+        (share.0, share.1.clone() - scalar.clone())
+    }
+
+    fn multiply_scalar(share: &(usize, T), scalar: &T) -> (usize, T) {
+        (share.0, share.1.clone() * scalar.clone())
     }
 
     fn sum_shares(shares: &[(usize, T)]) -> Option<(usize, T)> {
@@ -119,16 +131,16 @@ mod tests {
     #[test]
     fn test_reconstruction() {
         let shares = ExampleProtocol::generate_shares(&mut thread_rng(),
-                                                          &Mersenne89::from_usize(20).unwrap(), 5, 5);
+                                                      &Mersenne89::from_usize(20).unwrap(), 5, 5);
         assert_eq!(ExampleProtocol::reconstruct_secret(&shares, 5), Mersenne89::from_usize(20).unwrap());
     }
 
     #[test]
     fn test_linearity() {
         let shares = ExampleProtocol::generate_shares(&mut thread_rng(),
-                                                          &Mersenne89::from_usize(20).unwrap(), 2, 2);
+                                                      &Mersenne89::from_usize(20).unwrap(), 2, 2);
         let shares_2 = ExampleProtocol::generate_shares(&mut thread_rng(),
-                                                            &Mersenne89::from_usize(40).unwrap(), 2, 2);
+                                                        &Mersenne89::from_usize(40).unwrap(), 2, 2);
 
         let addition: Vec<_> = shares.into_iter()
             .zip(shares_2)
