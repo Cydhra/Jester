@@ -101,7 +101,7 @@ pub trait ParallelTwoStageMultiplicationScheme<T, S>: TwoStageMultiplicationSche
     /// Prepare multiple multiplications by multiplying the first with the second element for each tuple given as
     /// `pairs`. The returned future will result in a `Vec` of `Self::IntermediateState` - one for each tuple (order
     /// must be retained).
-    fn prepare_multiple_multiplications(&mut self, pairs: &[(&S, &S)])
+    fn prepare_multiple_multiplications(&mut self, pairs: &[(S, S)])
         -> Pin<Box<dyn Future<Output=Vec<Self::IntermediateState>> + Send>>;
 
     /// Finish a set of multiplications represented by their `Self::IntermediateState`. Returns a future with a
