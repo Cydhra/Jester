@@ -73,11 +73,10 @@ impl<P, T, S> MultiplicationScheme<T, S> for P
                 let epsilon_share = Self::sub_shares(&lhs, &a);
                 let delta_share = Self::sub_shares(&rhs, &b);
 
-                let delta = self.reveal_shares(delta_share);
-                let epsilon = self.reveal_shares(epsilon_share);
-
-                let delta = delta.await;
-                let epsilon = epsilon.await;
+                let (delta, epsilon) = join!(
+                    self.reveal_shares(delta_share),
+                    self.reveal_shares(epsilon_share)
+                );
 
                 c + b * epsilon.clone() + a * delta.clone() - epsilon.clone() * delta.clone()
             }
