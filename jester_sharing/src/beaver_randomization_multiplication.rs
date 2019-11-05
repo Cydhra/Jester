@@ -2,7 +2,6 @@ use std::future::Future;
 use std::pin::Pin;
 
 use futures::{future::join_all, join};
-use num::traits::NumOps;
 
 use jester_algebra::prime::PrimeField;
 
@@ -36,7 +35,7 @@ impl<P, T, S> ParallelMultiplicationScheme<T, S> for P
                 let multiplications = pairs_clone
                     .into_iter()
                     .zip(beaver_triples.clone())
-                    .map(|((lhs, rhs), (a, b, c))| {
+                    .map(|((lhs, rhs), (a, b, _))| {
                         let epsilon_share = Self::sub_shares(&lhs, &a);
                         let delta_share = Self::sub_shares(&rhs, &b);
 
