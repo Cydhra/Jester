@@ -3,7 +3,7 @@ use num::pow::pow;
 use num_bigint::RandBigInt;
 use rand::{CryptoRng, RngCore};
 
-use jester_algebra::PrimeField;
+use jester_algebra::prime::PrimeField;
 
 use crate::{LinearSharingScheme, ThresholdSecretSharingScheme};
 
@@ -113,7 +113,7 @@ mod tests {
     use num::{FromPrimitive, One};
     use rand::thread_rng;
 
-    use jester_algebra::Mersenne89;
+    use jester_algebra::prime::Mersenne89;
 
     use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
     use crate::ThresholdSecretSharingScheme;

@@ -4,7 +4,7 @@ use std::pin::Pin;
 use futures::{future::join_all, join};
 use num::traits::NumOps;
 
-use jester_algebra::PrimeField;
+use jester_algebra::prime::PrimeField;
 
 use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ParallelMultiplicationScheme, ThresholdSecretSharingScheme};
 

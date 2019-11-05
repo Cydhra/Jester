@@ -2,7 +2,7 @@ use std::future::Future;
 
 use rand::{CryptoRng, RngCore};
 
-use jester_algebra::PrimeField;
+use jester_algebra::prime::PrimeField;
 
 use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ThresholdSecretSharingScheme};
 
