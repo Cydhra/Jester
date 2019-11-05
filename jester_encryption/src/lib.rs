@@ -1,4 +1,4 @@
-use rand::{RngCore, CryptoRng};
+use rand::{CryptoRng, RngCore};
 
 pub mod rsa;
 
@@ -16,8 +16,8 @@ pub trait AsymmetricalEncryptionScheme {
         where R: RngCore + CryptoRng;
 
     /// Encrypt a message using the given public key. The cipher text will be returned inside a `Box`.
-    fn encrypt_message(key: &Self::PublicKey, message: &[u8]) -> Box<&[u8]>;
+    fn encrypt_message(key: &Self::PublicKey, message: &[u8]) -> Box<[u8]>;
 
     /// Decrypt a cipher text using the given private key. The clear text will be returned inside a `Box`
-    fn decrypt_message(key: &Self::PrivateKey, cipher: &[u8]) -> Box<&[u8]>;
+    fn decrypt_message(key: &Self::PrivateKey, cipher: &[u8]) -> Box<[u8]>;
 }
