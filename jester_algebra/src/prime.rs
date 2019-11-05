@@ -240,6 +240,12 @@ prime_fields!(
     pub Mersenne107(162259276829213363391578010288127),
     pub Mersenne127(170141183460469231731687303715884105727));
 
+/// This trait defines a function to randomly generate a prime number of a given size
+trait PrimeGenerator {
+    fn generate_random_prime<R>(rng: R, bit_size: usize) -> BigUint
+        where R: RngCore + CryptoRng;
+}
+
 #[cfg(test)]
 mod tests {
     use num::{Num, One};
