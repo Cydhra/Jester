@@ -45,8 +45,8 @@ impl<T, P> LinearSharingScheme<T, (usize, T)> for P
             None
         } else {
             // assert that all shares are of the same x value
-            assert!(shares.iter().fold(shares.get(0).and_then(|x| Some(x.0)),
-                                       |akk, val| if akk == Some(val.0) { akk } else { None }).is_some());
+            assert!(shares.iter().fold(shares.get(0).map(|x| x.0),
+                                       |acc, val| if acc == Some(val.0) { acc } else { None }).is_some());
 
             Some((shares.get(0).unwrap().0, shares.iter()
                 .map(|(_, y)| y.clone())

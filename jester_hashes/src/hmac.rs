@@ -34,7 +34,7 @@ pub fn hmac<H>(key: &[u8], message: &[u8]) -> Box<[u8]>
 
 fn pad(key: &[u8], length: usize) -> Box<[u8]> {
     let mut padded_vec = key.to_vec();
-    padded_vec.extend_from_slice(&vec![0u8; length - key.len()]);
+    padded_vec.extend_from_slice(&vec![0_u8; length - key.len()]);
     padded_vec.into_boxed_slice()
 }
 

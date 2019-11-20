@@ -58,7 +58,7 @@ impl MD5Hash {
     pub fn round_function(&mut self, input: &[u8]) {
         assert_eq!(input.len(), BLOCK_LENGTH_BYTES);
 
-        let mut input_block = [0u32; BLOCK_LENGTH_DOUBLE_WORDS];
+        let mut input_block = [0_u32; BLOCK_LENGTH_DOUBLE_WORDS];
         unsafe { jester_util::align_to_u32a_le(&mut input_block, input) };
 
         let mut round_state = *self;
@@ -102,25 +102,26 @@ impl MD5Hash {
     /// # Parameters
     /// ``input`` the input array that shall be padded and applied. It can be longer than one block,
     /// all full blocks prefixing the array will be omitted.
+    #[allow(clippy::cast_possible_truncation)]
     pub fn digest_last_block(&mut self, input: &[u8]) {
-        let message_length_bits: u64 = (input.len() as u64) * 8u64;
+        let message_length_bits: u64 = (input.len() as u64) * 8_u64;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 
         let relevant_data = &input[message_blocks_count * BLOCK_LENGTH_BYTES..];
 
-        let mut last_block = [0u8; BLOCK_LENGTH_BYTES];
+        let mut last_block = [0_u8; BLOCK_LENGTH_BYTES];
         // append the last part of message to the block
         for (dst, src) in last_block.iter_mut().zip(relevant_data.iter()) {
             *dst = *src
         }
 
         // append a single 1-bit to the end of the message
-        last_block[relevant_data.len()] = 0x80u8;
+        last_block[relevant_data.len()] = 0x80_u8;
 
         // if there is not enough space for the message length to be appended, a new block must be
         // created
         if relevant_data.len() + 1 + size_of::<u64>() > BLOCK_LENGTH_BYTES {
-            let mut overflow_block = [0u8; BLOCK_LENGTH_BYTES];
+            let mut overflow_block = [0_u8; BLOCK_LENGTH_BYTES];
             // append the message length in bits
             for i in 0..8 {
                 overflow_block[BLOCK_LENGTH_BYTES - 8 + i] = (message_length_bits >> (i * 8) as u64) as u8;
@@ -142,7 +143,7 @@ impl MD5Hash {
 impl HashFunction for MD5Hash {
     const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
 
-    const OUTPUT_SIZE: usize = mem::size_of::<MD5Hash>();
+    const OUTPUT_SIZE: usize = mem::size_of::<Self>();
 
     /// Digest a full message of arbitrary size.
     /// #Parameters
