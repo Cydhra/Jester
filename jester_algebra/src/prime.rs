@@ -28,7 +28,7 @@ macro_rules! prime_fields {
                 $v struct $name(num_bigint::BigUint);
 
                 impl std::ops::Add<$name> for $name {
-                    type Output = $name;
+                    type Output = Self;
 
                     fn add(self, rhs: $name) -> Self::Output {
                         let mut sum = self.0.clone().add(&rhs.0);
@@ -40,7 +40,7 @@ macro_rules! prime_fields {
 
             m! {
                 impl std::ops::Sub<$name> for $name {
-                    type Output = $name;
+                    type Output = Self;
 
                     fn sub(self, rhs: $name) -> Self::Output {
                         let mut sum = if self >= rhs {
@@ -57,7 +57,7 @@ macro_rules! prime_fields {
             }
             m! {
                 impl std::ops::Div<$name> for $name {
-                    type Output = $name;
+                    type Output = Self;
 
                     fn div(self, rhs: $name) -> Self::Output {
                         let mut tmp = ::std::ops::Div::div(&self.0.clone(), &rhs.0);
@@ -68,7 +68,7 @@ macro_rules! prime_fields {
             }
             m! {
                 impl std::ops::Mul<$name> for $name {
-                    type Output = $name;
+                    type Output = Self;
 
                     fn mul(self, rhs: $name) -> Self::Output {
                         let mut tmp = ::std::ops::Mul::mul(&self.0.clone(), &rhs.0);
