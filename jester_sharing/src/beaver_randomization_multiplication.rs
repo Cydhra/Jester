@@ -26,7 +26,7 @@ impl<P, T, S> ParallelMultiplicationScheme<T, S> for P
           P: BeaverRandomizationMultiplication<T, S> + ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> +
           CliqueCommunicationScheme<T, S> + MultiplicationScheme<T, S> + Send {
     fn parallel_multiply<'a>(&'a mut self, pairs: &[(S, S)]) -> Pin<Box<dyn Future<Output=Vec<S>> + Send + 'a>> {
-        let pairs_clone = pairs.iter().map(|(l, r)| (l.clone(), r.clone())).collect::<Vec<(S, S)>>();
+        let pairs_clone: Vec<_> = pairs.iter().cloned().collect();
 
         Box::pin(
             async move {
