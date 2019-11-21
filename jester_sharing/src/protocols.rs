@@ -2,13 +2,11 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
-use std::sync::RwLock;
 
 use futures::{future::join_all, join};
 use futures::lock::Mutex;
-use num::{FromPrimitive, One, Zero};
+use num::{FromPrimitive, One};
 use num_bigint::BigUint;
-use once_cell::sync::Lazy;
 use rand::{CryptoRng, RngCore};
 
 use jester_algebra::prime::PrimeField;
@@ -231,15 +229,88 @@ async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_siz
     acc
 }
 
-pub async fn joint_unbounded_or<T, S, P>(protocol: &mut P, bits: &[S]) -> S
-    where T: PrimeField + Send + Sync + 'static,
+pub async fn joint_unbounded_or<R, T, S, P>(rng: &mut R, protocol: &mut P, bits: &[S]) -> S
+    where R: RngCore + CryptoRng,
+          T: PrimeField + Send + Sync + 'static,
+          S: Clone + 'static,
           P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
           ParallelMultiplicationScheme<T, S> {
     assert!(bits.len() > 0);
 
-    // compute a polynomial share of the sum of all bits plus one
+    // compute a polynomial share of the sum of all `l` bits plus one.
     let sum = P::add_scalar(&P::sum_shares(bits).unwrap(), &T::one());
-    let degree = bits.len();
 
-    unimplemented!()
+    // now define an `l`-degree polynomial f(x) such that `f(1) = 0, f(2) = f(3) = ... = f(l + 1) = 1`. Note that
+    // f(sum) = bits[0] | bits[1] | ... | bits[l]. Choose `l + 1` samples from the polynomial. Conveniently, the
+    // samples at points `(1..l+1)` are chosen. Those samples are the lagrange-coefficients of the polynomial and can
+    // be transformed to monomial-coefficients by multiplication with the inverse vandermonde-matrix
+    let degree = bits.len(); // `l`
+    let lagrange_coefficients: Vec<_> = (1..=degree + 1)
+        .map(|a| if a == 1 { 0_usize } else { 1_usize })
+        .collect();
+
+    let monomial_coefficients: Vec<T> = join_all((0..=degree)
+        .map(|i| {
+            let iter_clone = lagrange_coefficients.iter();
+            async move {
+                join_all(iter_clone
+                    .enumerate()
+                    .map(|(j, c)| async move {
+                        get_inverted_vandermonde_entry::<T>(i as isize, j as isize, degree + 1).await
+                            * BigUint::from(*c).into()
+                    }))
+                    .await
+                    .into_iter()
+                    .sum()
+            }
+        })).await;
+
+    // generate `l` helper used for an unbounded multiplication. Those helpers will be inverted using an
+    // unbounded inversion and then multiplied with the elements that are used in the unbounded multiplication such
+    // that helper[i - 1] * inverse_helper[i] are multiplied with one element. Then all elements that are rerandomized
+    // this way are revealed and multiplied together by all parties. This way, all helpers except for one cancel each
+    // other out and the last (inverse) helper remaining will be cancelled by all parties independently by
+    // multiplying their share of that helper. This way, all parties obtain a share of the unbounded multiplication
+    // result, but cannot learn the reconstructed result without learning the reconstructed last helper.
+    let helpers: Vec<_> = (1..=degree)
+        .map(|_| joint_random_number_sharing(rng, protocol))
+        .collect();
+    let helpers = join_all(helpers).await;
+
+    let inverted_helpers = joint_unbounded_inversion(rng, protocol, &helpers).await;
+
+    // multiply the `i`'th inverted helper (except the first one) with the `(i - 1)'th` helper
+    let mut cancellation_factors = vec![];
+    cancellation_factors.push(inverted_helpers[0].clone());
+    cancellation_factors.append(&mut protocol.parallel_multiply(
+        &helpers[..degree - 1]
+            .iter()
+            .cloned()
+            .zip(inverted_helpers[1..].iter().cloned())
+            .collect::<Vec<_>>()).await);
+
+    // unbounded multiplication keeping all factors
+    let factors = protocol.parallel_multiply(
+        &cancellation_factors.into_iter()
+            .map(|f| (sum.clone(), f))
+            .collect::<Vec<_>>()
+    ).await;
+
+    // reveal factors
+    let revealed_factors: Vec<_> = factors.iter().map(|c| protocol.reveal_shares(c.clone())).collect();
+    let revealed_factors = join_all(revealed_factors).await;
+
+    // calculate all powers of `sum` between `1` and `degree` and add their respective monomials
+    let powers_for_polynomial: Vec<_> = (1..=degree)
+        .map(|power|
+            P::multiply_scalar(
+                &P::multiply_scalar(&helpers[power - 1], &revealed_factors[..power].iter().cloned().product()),
+                &monomial_coefficients[power]))
+        .collect();
+
+    // add the constant monomial coefficient to the polynomial and sum it up
+    powers_for_polynomial[1..]
+        .iter()
+        .fold(P::add_scalar(&powers_for_polynomial[0], &monomial_coefficients[0]), |acc, monomial|
+            P::add_shares(&acc, monomial))
 }
