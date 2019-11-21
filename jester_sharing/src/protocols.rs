@@ -1,5 +1,14 @@
+use std::collections::HashMap;
 use std::future::Future;
+use std::marker::PhantomData;
+use std::pin::Pin;
+use std::sync::RwLock;
 
+use futures::join;
+use futures::lock::Mutex;
+use num::{FromPrimitive, One, Zero};
+use num_bigint::BigUint;
+use once_cell::sync::Lazy;
 use rand::{CryptoRng, RngCore};
 
 use jester_algebra::prime::PrimeField;
@@ -55,4 +64,121 @@ pub async fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &
     // copy rhs to move a copy into the future
     let product = protocol.multiply(condition, &operands_difference).await;
     P::add_shares(&product, rhs)
+}
+
+/// A function generating the upper triangular matrix U that is defined by V = U * L, where V is the inverted
+/// Vandermonde matrix. The function generates the matrix recursively and caches results to be used later on.
+/// Asynchronicity is used to wait on a lock onto the global cache it uses for pre-calculated entries.
+/// # Parameters
+/// - `row` row of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
+/// - `column` column of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
+fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn Future<Output=T> + Sync + Send>>
+    where T: PrimeField + Send + Sync + 'static {
+    Box::pin(async move {
+        // a wrapper struct wrapping a marker used as a key in a typemap
+        struct TypeKey<T: 'static>(PhantomData<T>);
+        impl<T: 'static> typemap::Key for TypeKey<T> {
+            type Value = HashMap<(isize, isize), T>;
+        }
+
+        lazy_static! {
+        static ref INVERTED_VANDERMONDE_MATRIX_UPPER: Mutex<typemap::ShareMap> =
+            Mutex::new(typemap::TypeMap::custom());
+    }
+
+        if let Some(v) = INVERTED_VANDERMONDE_MATRIX_UPPER
+            .lock()
+            .await
+            .get::<TypeKey<T>>()
+            .and_then(|matrix| matrix.get(&(row, column))) {
+            v.clone().into()
+        } else {
+            let v = if row == column {
+                T::one()
+            } else if column == 0 {
+                T::zero()
+            } else if row == -1 {
+                T::zero()
+            } else {
+                assert!(column >= 0);
+                assert!(row >= 0);
+
+                let x = (BigUint::from_isize(column).unwrap() + BigUint::one()).into();
+
+                let (a, b) = join!(get_inverted_vandermonde_upper::<T>(row - 1, column - 1),
+                get_inverted_vandermonde_upper::<T>(row, column - 1));
+
+                a - b * x
+            };
+
+            INVERTED_VANDERMONDE_MATRIX_UPPER
+                .lock()
+                .await
+                .entry::<TypeKey<T>>()
+                .or_insert_with(|| HashMap::new())
+                .insert((row, column), v.clone());
+            v
+        }
+    })
+}
+
+/// A function generating the lower triangular matrix L that is defined by V = U * L, where V is the inverted
+/// Vandermonde matrix. The function generates the matrix recursively and caches results to be used later on.
+/// Asynchronicity is used to wait on a lock onto the global cache it uses for pre-calculated entries.
+/// # Parameters
+/// - `row` row of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
+/// - `column` column of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
+async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
+    where T: PrimeField + Send + Sync + 'static {
+    // use a wrapper to a marker type that can be used as a key to the typemap
+    struct TypeKey<T: 'static>(PhantomData<T>);
+    impl<T: 'static> typemap::Key for TypeKey<T> {
+        type Value = HashMap<(isize, isize), T>;
+    }
+
+    lazy_static! {
+        static ref INVERTED_VANDERMONDE_MATRIX_LOWER: Mutex<typemap::ShareMap> =
+            Mutex::new(typemap::TypeMap::custom());
+    }
+
+    if let Some(v) = INVERTED_VANDERMONDE_MATRIX_LOWER
+        .lock()
+        .await
+        .get::<TypeKey<T>>()
+        .and_then(|matrix| matrix.get(&(row, column))) {
+        v.clone().into()
+    } else {
+        let v = if row < column {
+            T::zero()
+        } else if row == 0 && column == 0 {
+            T::one()
+        } else {
+            (0..=row)
+                .filter(|k| *k != column)
+                .map(|k| (BigUint::from_isize(column).unwrap() - BigUint::from_isize(k).unwrap()).into())
+                .product::<T>()
+                .inverse()
+        };
+
+        INVERTED_VANDERMONDE_MATRIX_LOWER
+            .lock()
+            .await
+            .entry::<TypeKey<T>>()
+            .or_insert_with(|| HashMap::new())
+            .insert((row, column), v.clone());
+        v
+    }
+}
+
+async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_size: usize) -> T {
+    assert!(matrix_size > 0);
+
+    unimplemented!()
+}
+
+pub async fn unbounded_or<T, S, P>(protocol: &mut P, bits: &[S]) -> S
+    where T: PrimeField,
+          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
+          MultiplicationScheme<T, S> {
+    unimplemented!()
 }
