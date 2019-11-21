@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::RwLock;
 
-use futures::join;
+use futures::{future::join_all, join};
 use futures::lock::Mutex;
 use num::{FromPrimitive, One, Zero};
 use num_bigint::BigUint;
@@ -13,7 +13,7 @@ use rand::{CryptoRng, RngCore};
 
 use jester_algebra::prime::PrimeField;
 
-use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ThresholdSecretSharingScheme};
+use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ParallelMultiplicationScheme, ThresholdSecretSharingScheme};
 
 /// A protocol to generate a secret random number where every participant has a share on that number, but no
 /// participant learns the actual value of that number.
@@ -64,6 +64,45 @@ pub async fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &
     // copy rhs to move a copy into the future
     let product = protocol.multiply(condition, &operands_difference).await;
     P::add_shares(&product, rhs)
+}
+
+/// A protocol inverting an unbounded amount of shares in parallel. The protocol requires two round-trip-times in a
+/// `CliqueCommunicationScheme`.
+/// # Parameters
+/// - `rng` a cryptographically secure random number generator
+/// - `protocol` an instance of the sub-protocols used. It must be a `ThresholdSecretSharingScheme` with additive
+/// linear shares and communication between all participants. Furthermore, parallel multiplication by communication
+/// must be supported.
+/// - `elements` the shares that shall be inverted
+///
+/// # Output
+/// Returns a `Vec` of shares that are the inverted input elements in the same order.
+pub async fn unbounded_inversion<R, T, S, P>(rng: &mut R, protocol: &mut P, elements: &[S]) -> Vec<S>
+    where R: RngCore + CryptoRng,
+          T: PrimeField,
+          S: Clone + 'static,
+          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
+          ParallelMultiplicationScheme<T, S> {
+    let bound = elements.len();
+    let helpers: Vec<_> = (0..bound)
+        .map(|_| joint_random_number_sharing(rng, protocol))
+        .collect();
+    let helpers = join_all(helpers).await;
+
+    let rerandomized_elements = protocol.parallel_multiply(&elements.iter()
+        .cloned()
+        .zip(helpers.clone())
+        .collect::<Vec<_>>())
+        .await;
+
+    let revealed_elements = rerandomized_elements.into_iter()
+        .map(|e| protocol.reveal_shares(e));
+    let revealed_elements = join_all(revealed_elements).await;
+
+    revealed_elements.into_iter()
+        .zip(helpers)
+        .map(|(hidden_element, helper)| P::multiply_scalar(&helper, &hidden_element.inverse()))
+        .collect()
 }
 
 /// A function generating the upper triangular matrix U that is defined by V = U * L, where V is the inverted
@@ -193,8 +232,14 @@ async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_siz
 }
 
 pub async fn unbounded_or<T, S, P>(protocol: &mut P, bits: &[S]) -> S
-    where T: PrimeField,
+    where T: PrimeField + Send + Sync + 'static,
           P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
-          MultiplicationScheme<T, S> {
+          ParallelMultiplicationScheme<T, S> {
+    assert!(bits.len() > 0);
+
+    // compute a polynomial share of the sum of all bits plus one
+    let sum = P::add_scalar(&P::sum_shares(bits).unwrap(), &T::one());
+    let degree = bits.len();
+
     unimplemented!()
 }
