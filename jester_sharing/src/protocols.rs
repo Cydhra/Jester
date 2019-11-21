@@ -170,10 +170,26 @@ async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
     }
 }
 
-async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_size: usize) -> T {
+/// Asynchronously get the entries of an inverted vandermonde matrix of given size. This function does not cache
+/// results, as results change on different matrix sizes.
+/// # Parameters
+/// - `row` row of requested entry. Starts at zero. Negative entries will result in unexpected behaviour.
+/// - `column` column of requested entry. Starts at zero. Negative entries will result in unexpected behaviour.
+/// - `matrix_size` size of the square vandermonde matrix. Depends on the amount of sample points that this matrix
+/// transforms.
+async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_size: usize) -> T
+    where T: PrimeField + Sync + Send + 'static {
     assert!(matrix_size > 0);
 
-    unimplemented!()
+    let mut acc = T::zero();
+
+    for index in 0..matrix_size {
+        let (u, l) = join!(get_inverted_vandermonde_upper::<T>(row, index as isize),
+                                get_inverted_vandermonde_lower::<T>(index as isize, column));
+        acc = acc + u * l
+    }
+
+    acc
 }
 
 pub async fn unbounded_or<T, S, P>(protocol: &mut P, bits: &[S]) -> S
