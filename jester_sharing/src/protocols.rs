@@ -77,7 +77,7 @@ pub async fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &
 ///
 /// # Output
 /// Returns a `Vec` of shares that are the inverted input elements in the same order.
-pub async fn unbounded_inversion<R, T, S, P>(rng: &mut R, protocol: &mut P, elements: &[S]) -> Vec<S>
+pub async fn joint_unbounded_inversion<R, T, S, P>(rng: &mut R, protocol: &mut P, elements: &[S]) -> Vec<S>
     where R: RngCore + CryptoRng,
           T: PrimeField,
           S: Clone + 'static,
@@ -231,7 +231,7 @@ async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_siz
     acc
 }
 
-pub async fn unbounded_or<T, S, P>(protocol: &mut P, bits: &[S]) -> S
+pub async fn joint_unbounded_or<T, S, P>(protocol: &mut P, bits: &[S]) -> S
     where T: PrimeField + Send + Sync + 'static,
           P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
           ParallelMultiplicationScheme<T, S> {
