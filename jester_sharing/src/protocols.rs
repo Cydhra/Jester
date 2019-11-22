@@ -313,3 +313,83 @@ pub async fn joint_unbounded_or<R, T, S, P>(rng: &mut R, protocol: &mut P, bits:
         .fold(P::add_scalar(&powers_for_polynomial[0], &monomial_coefficients[0]), |acc, monomial|
             P::add_shares(&acc, monomial))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::iter::repeat;
+    use std::pin::Pin;
+
+    use futures::executor::block_on;
+    use futures::Future;
+    use num::traits::{One, Zero};
+    use rand::thread_rng;
+
+    use jester_algebra::prime::Mersenne89;
+
+    use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
+    use crate::CliqueCommunicationScheme;
+    use crate::protocols::joint_unbounded_or;
+    use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
+
+    /// A testing protocol that is carried out between two participants that do not randomize their inputs and do no
+                /// communicate as all values are deterministic anyways.
+    struct TestProtocol {
+        participant_id: usize,
+    }
+
+    impl ShamirSecretSharingScheme<Mersenne89> for TestProtocol {}
+
+    /// All shares are considered to be carried out on polynomials where all coefficients are zero. Thus
+    /// communication is unnecessary and the secret is always the share
+    impl CliqueCommunicationScheme<Mersenne89, (usize, Mersenne89)> for TestProtocol
+        where TestProtocol: ShamirSecretSharingScheme<Mersenne89> {
+        fn reveal_shares(&mut self, share: (usize, Mersenne89)) -> Pin<Box<dyn Future<Output=Mersenne89> + Send>> {
+            Box::pin(
+                async move {
+                    share.1
+                }
+            )
+        }
+
+        fn distribute_secret(&mut self, secret: Mersenne89)
+                             -> Pin<Box<dyn Future<Output=Vec<(usize, Mersenne89)>> + Send>> {
+            let id = self.participant_id;
+            Box::pin(async move {
+                vec![(id, secret.clone()), (id, secret)]
+            })
+        }
+    }
+
+    impl BeaverRandomizationMultiplication<Mersenne89, (usize, Mersenne89)> for TestProtocol {
+        fn get_reconstruction_threshold(&self) -> usize {
+            2
+        }
+
+        fn obtain_beaver_triples<'a>(&'a mut self, count: usize)
+                                     -> Pin<Box<dyn Future<Output=Vec<((usize, Mersenne89), (usize, Mersenne89),
+                                                                       (usize, Mersenne89))>> + Send + 'a>> {
+            Box::pin(
+                async move {
+                    repeat(((self.participant_id, Mersenne89::one()),
+                            (self.participant_id, Mersenne89::one()),
+                            (self.participant_id, Mersenne89::one())))
+                        .take(count)
+                        .collect()
+                }
+            )
+        }
+    }
+
+    #[test]
+    fn test_unbounded_or() {
+        let mut protocol = TestProtocol { participant_id: 1 };
+
+        block_on(async {
+            let bits = vec![(1, Mersenne89::one()), (1, Mersenne89::one()), (1, Mersenne89::zero())];
+
+            let or = joint_unbounded_or(&mut thread_rng(), &mut protocol, &bits).await;
+            let revealed = protocol.reveal_shares(or).await;
+            assert_eq!(revealed, Mersenne89::one());
+        })
+    }
+}
