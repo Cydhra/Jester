@@ -119,17 +119,19 @@ fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn F
         }
 
         lazy_static! {
-        static ref INVERTED_VANDERMONDE_MATRIX_UPPER: Mutex<typemap::ShareMap> =
-            Mutex::new(typemap::TypeMap::custom());
-    }
+            static ref INVERTED_VANDERMONDE_MATRIX_UPPER: Mutex<typemap::ShareMap> =
+                Mutex::new(typemap::TypeMap::custom());
+        }
 
-        if let Some(v) = INVERTED_VANDERMONDE_MATRIX_UPPER
-            .lock()
-            .await
+        let mutex_guard = INVERTED_VANDERMONDE_MATRIX_UPPER.lock().await;
+
+        if let Some(v) = mutex_guard
             .get::<TypeKey<T>>()
             .and_then(|matrix| matrix.get(&(row, column))) {
             v.clone().into()
         } else {
+            drop(mutex_guard);
+
             let v = if row == column {
                 T::one()
             } else if column == 0 {
@@ -148,9 +150,8 @@ fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn F
                 a - b * x
             };
 
-            INVERTED_VANDERMONDE_MATRIX_UPPER
-                .lock()
-                .await
+            let mut mutex_guard = INVERTED_VANDERMONDE_MATRIX_UPPER.lock().await;
+            mutex_guard
                 .entry::<TypeKey<T>>()
                 .or_insert_with(|| HashMap::new())
                 .insert((row, column), v.clone());
@@ -178,9 +179,9 @@ async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
             Mutex::new(typemap::TypeMap::custom());
     }
 
-    if let Some(v) = INVERTED_VANDERMONDE_MATRIX_LOWER
-        .lock()
-        .await
+    let mut mutex_guard = INVERTED_VANDERMONDE_MATRIX_LOWER.lock().await;
+
+    if let Some(v) = mutex_guard
         .get::<TypeKey<T>>()
         .and_then(|matrix| matrix.get(&(row, column))) {
         v.clone().into()
@@ -197,9 +198,7 @@ async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
                 .inverse()
         };
 
-        INVERTED_VANDERMONDE_MATRIX_LOWER
-            .lock()
-            .await
+        mutex_guard
             .entry::<TypeKey<T>>()
             .or_insert_with(|| HashMap::new())
             .insert((row, column), v.clone());
