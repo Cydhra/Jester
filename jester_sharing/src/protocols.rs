@@ -192,7 +192,7 @@ async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
         } else {
             (0..=row)
                 .filter(|k| *k != column)
-                .map(|k| (BigUint::from_isize(column).unwrap() - BigUint::from_isize(k).unwrap()).into())
+                .map(|k| T::from_isize(column).unwrap() - T::from_isize(k).unwrap())
                 .product::<T>()
                 .inverse()
         };
@@ -223,7 +223,7 @@ async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_siz
     for index in 0..matrix_size {
         let (u, l) = join!(get_inverted_vandermonde_upper::<T>(row, index as isize),
                                 get_inverted_vandermonde_lower::<T>(index as isize, column));
-        acc = acc + u * l
+        acc = acc + u * l;
     }
 
     acc
