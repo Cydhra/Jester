@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::iter::{Product, Sum};
 
 use num::{BigUint, FromPrimitive, Num};
@@ -192,7 +193,7 @@ macro_rules! prime_fields {
 }
 
 /// This trait describes an integer type for large prime field arithmetic.
-pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitive {
+pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitive + Debug {
     /// Returns the prime number that is base to this numeric field and its operations.
     fn field_prime() -> Self;
 
