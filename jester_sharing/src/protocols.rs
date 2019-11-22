@@ -326,13 +326,13 @@ mod tests {
 
     use jester_algebra::prime::Mersenne89;
 
+    use crate::{CliqueCommunicationScheme, LinearSharingScheme};
     use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
-    use crate::CliqueCommunicationScheme;
-    use crate::protocols::joint_unbounded_or;
+    use crate::protocols::{joint_unbounded_inversion, joint_unbounded_or};
     use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
 
     /// A testing protocol that is carried out between two participants that do not randomize their inputs and do no
-                /// communicate as all values are deterministic anyways.
+                    /// communicate as all values are deterministic anyways.
     struct TestProtocol {
         participant_id: usize,
     }
@@ -378,6 +378,23 @@ mod tests {
                 }
             )
         }
+    }
+
+    #[test]
+    fn test_protocol() {
+        let mut protocol = TestProtocol { participant_id: 1 };
+        let mut rng = thread_rng();
+
+        block_on(
+            async {
+                let shares = protocol.distribute_secret(Mersenne89::one() + Mersenne89::one()).await;
+                let inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &shares).await;
+                let doubly_inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &inverse).await;
+                let revealed = protocol.reveal_shares(doubly_inverse[0].clone()).await;
+
+                assert_eq!(Mersenne89::one() + Mersenne89::one(), revealed);
+            }
+        )
     }
 
     #[test]
