@@ -7,6 +7,8 @@ use jester_algebra::prime::PrimeField;
 
 use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ParallelMultiplicationScheme, ThresholdSecretSharingScheme};
 
+type BoxFuture<'a, T> = Pin<Box<dyn Future<Output=T> + Send + 'a>>;
+
 /// A trait marking a special instance of a parallel two-stage multiplication scheme using Donald Beaver's
 /// rerandomization technique.
 pub trait BeaverRandomizationMultiplication<T, S>: ParallelMultiplicationScheme<T, S>
@@ -17,7 +19,7 @@ pub trait BeaverRandomizationMultiplication<T, S>: ParallelMultiplicationScheme<
 
     /// Obtain random triples of shares `([a], [b], [c])` where `c = a * b` holds. Every participant must use shares
     /// of the same triple during the same multiplication. This function cannot be called in parallel.
-    fn obtain_beaver_triples<'a>(&'a mut self, count: usize) -> Pin<Box<dyn Future<Output=Vec<(S, S, S)>> + Send + 'a>>;
+    fn obtain_beaver_triples<'a>(&'a mut self, count: usize) -> BoxFuture<'a, Vec<(S, S, S)>>;
 }
 
 impl<P, T, S> ParallelMultiplicationScheme<T, S> for P

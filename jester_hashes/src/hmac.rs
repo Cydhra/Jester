@@ -24,7 +24,7 @@ pub fn hmac<H>(key: &[u8], message: &[u8]) -> Box<[u8]>
     };
 
     let mut outer_message = padded_key.clone().iter().map(|v| v ^ 0x5C).collect::<Vec<_>>();
-    let mut inner_message = padded_key.clone().iter().map(|v| v ^ 0x36).collect::<Vec<_>>();
+    let mut inner_message = padded_key.iter().map(|v| v ^ 0x36).collect::<Vec<_>>();
 
     inner_message.append(&mut message.to_vec());
     outer_message.append(&mut H::digest_message(&inner_message).raw().into());

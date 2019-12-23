@@ -128,15 +128,13 @@ fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn F
         if let Some(v) = mutex_guard
             .get::<TypeKey<T>>()
             .and_then(|matrix| matrix.get(&(row, column))) {
-            v.clone().into()
+            v.clone()
         } else {
             drop(mutex_guard);
 
             let v = if row == column {
                 T::one()
-            } else if column == 0 {
-                T::zero()
-            } else if row == -1 {
+            } else if column == 0 || row == -1 {
                 T::zero()
             } else {
                 assert!(column >= 0);
@@ -153,7 +151,7 @@ fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn F
             let mut mutex_guard = INVERTED_VANDERMONDE_MATRIX_UPPER.lock().await;
             mutex_guard
                 .entry::<TypeKey<T>>()
-                .or_insert_with(|| HashMap::new())
+                .or_insert_with(HashMap::new)
                 .insert((row, column), v.clone());
             v
         }
@@ -184,7 +182,7 @@ async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
     if let Some(v) = mutex_guard
         .get::<TypeKey<T>>()
         .and_then(|matrix| matrix.get(&(row, column))) {
-        v.clone().into()
+        v.clone()
     } else {
         let v = if row < column {
             T::zero()
@@ -200,7 +198,7 @@ async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
 
         mutex_guard
             .entry::<TypeKey<T>>()
-            .or_insert_with(|| HashMap::new())
+            .or_insert_with(HashMap::new)
             .insert((row, column), v.clone());
         v
     }
@@ -234,7 +232,7 @@ pub async fn joint_unbounded_or<R, T, S, P>(rng: &mut R, protocol: &mut P, bits:
           S: Clone + 'static,
           P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
           ParallelMultiplicationScheme<T, S> {
-    assert!(bits.len() > 0);
+    assert!(!bits.is_empty());
 
     // compute a polynomial share of the sum of all `l` bits plus one.
     let sum = P::add_scalar(&P::sum_shares(bits).unwrap(), &T::one());
@@ -326,7 +324,7 @@ mod tests {
 
     use jester_algebra::prime::Mersenne89;
 
-    use crate::{CliqueCommunicationScheme, LinearSharingScheme};
+    use crate::{CliqueCommunicationScheme};
     use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
     use crate::protocols::{joint_unbounded_inversion, joint_unbounded_or};
     use crate::shamir_secret_sharing::ShamirSecretSharingScheme;

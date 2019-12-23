@@ -144,7 +144,7 @@ mod tests {
 
         let addition: Vec<_> = shares.into_iter()
             .zip(shares_2)
-            .map(|((x1, y1), (_, y2))| (x1, y1.clone() + y2.clone()))
+            .map(|((x1, y1), (_, y2))| (x1, y1 + y2))
             .collect();
 
         assert_eq!(ExampleProtocol::reconstruct_secret(&addition, 2), Mersenne89::from_usize(60).unwrap());

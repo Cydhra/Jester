@@ -1,4 +1,4 @@
-use std::{mem, ptr};
+use std::{mem::MaybeUninit, ptr};
 
 #[cfg(test)]
 mod tests {
@@ -22,9 +22,9 @@ pub unsafe fn align_to_u32a_le(dest: &mut [u32], source: &[u8]) {
     let mut dword_ptr: *mut u32 = dest.get_unchecked_mut(0);
 
     for _ in 0..dest.len() {
-        let mut current: u32 = mem::uninitialized();
-        ptr::copy_nonoverlapping(byte_ptr, &mut current as *mut _ as *mut u8, 4);
-        *dword_ptr = u32::from_le(current);
+        let mut current = MaybeUninit::uninit();
+        ptr::copy_nonoverlapping(byte_ptr, current.as_mut_ptr() as *mut _ as *mut u8, 4);
+        *dword_ptr = u32::from_le(current.assume_init());
         dword_ptr = dword_ptr.offset(1);
         byte_ptr = byte_ptr.offset(4);
     }
@@ -40,9 +40,9 @@ pub unsafe fn align_to_u32a_be(dest: &mut [u32], source: &[u8]) {
     let mut dword_ptr: *mut u32 = dest.get_unchecked_mut(0);
 
     for _ in 0..dest.len() {
-        let mut current: u32 = mem::uninitialized();
-        ptr::copy_nonoverlapping(byte_ptr, &mut current as *mut _ as *mut u8, 4);
-        *dword_ptr = u32::from_be(current);
+        let mut current = MaybeUninit::uninit();
+        ptr::copy_nonoverlapping(byte_ptr, current.as_mut_ptr() as *mut _ as *mut u8, 4);
+        *dword_ptr = u32::from_be(current.assume_init());
         dword_ptr = dword_ptr.offset(1);
         byte_ptr = byte_ptr.offset(4);
     }
