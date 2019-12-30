@@ -1,7 +1,5 @@
 use rand::{CryptoRng, RngCore};
 
-pub mod rsa;
-
 /// A trait representing an asymmetrical encryption scheme. It offers methods for generating a random key pair and
 /// encrypting and decrypting messages. No attempts for securing the keys are made, it is the caller's responsibility
 /// to properly protect the keys from attacker's attempts to retrieve them from memory according to the caller's
