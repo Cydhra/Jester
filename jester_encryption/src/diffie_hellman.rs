@@ -8,14 +8,14 @@ use jester_algebra::prime::PrimeField;
 /// - `T` the numerical type this protocol operates on. Implementors must make sure, that their type is actually
 /// suitable for the algorithm (i.e. a large prime field or an elliptic curve or a field with similar properties)
 pub trait DiffieHellmanKeyExchangeScheme<T> {
-
     /// Generate a random number a and raise the `generator` to the power of `a`. This is the public part of the
     /// Diffie-Hellman-Key-Exchange.
     /// #Parameters
     /// - `rng` cryptographically secure random number generator
     /// - `generator` a publicly known, common generator for `T`
     fn generate_public_key<R>(rng: &mut R, generator: T) -> T
-        where R: RngCore + CryptoRng;
+    where
+        R: RngCore + CryptoRng;
 
     /// Generate the shared secret from the public key received by the other party.
     /// #Parameters
@@ -28,13 +28,24 @@ pub trait DiffieHellmanKeyExchangeScheme<T> {
 /// #Type Parameters
 /// - `T` the numerical type the protocol is implemented for
 impl<T> DiffieHellmanKeyExchangeScheme<T> for T
-    where T: PrimeField {
-    fn generate_public_key<R>(rng: &mut R, generator: T) -> T where R: RngCore + CryptoRng {
+where
+    T: PrimeField,
+{
+    fn generate_public_key<R>(rng: &mut R, generator: T) -> T
+    where
+        R: RngCore + CryptoRng,
+    {
         let a = T::generate_random_member(rng);
-        generator.as_uint().modpow(&a.as_uint(), &T::field_prime().as_uint()).into()
+        generator
+            .as_uint()
+            .modpow(&a.as_uint(), &T::field_prime().as_uint())
+            .into()
     }
 
     fn generate_shared_secret(generated_key: T, partner_key: T) -> T {
-        generated_key.as_uint().modpow(&partner_key.as_uint(), &T::field_prime().as_uint()).into()
+        generated_key
+            .as_uint()
+            .modpow(&partner_key.as_uint(), &T::field_prime().as_uint())
+            .into()
     }
 }
