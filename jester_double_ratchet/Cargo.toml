@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 jester_encryption = { path = "../jester_encryption" }
+rand = "0.5.6"
