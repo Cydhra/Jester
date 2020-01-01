@@ -2,7 +2,9 @@ use std::fmt::Debug;
 use std::iter::{Product, Sum};
 
 use num::{BigUint, FromPrimitive, Num};
+pub use num_bigint;
 use num_bigint::RandBigInt;
+pub use once_cell;
 use rand::{CryptoRng, RngCore};
 
 #[macro_export]
@@ -17,16 +19,17 @@ macro_rules! prime_fields {
 
         $(
             m! {
-                static "prime" $name: once_cell::sync::Lazy<$name> = once_cell::sync::Lazy::new(|| {
-                    // do not parse this to a struct instance directly, because parsing that actually requires
-                    // this constant to be already present. Parse the big integer from string instead.
-                    $name(std::str::FromStr::from_str(stringify!($prime)).unwrap())
-                });
+                static "prime" $name: $crate::prime::once_cell::sync::Lazy<$name> =
+                    $crate::prime::once_cell::sync::Lazy::new (|| {
+                        // do not parse this to a struct instance directly, because parsing that actually requires
+                        // this constant to be already present. Parse the big integer from string instead.
+                        $name(std::str::FromStr::from_str($prime).unwrap())
+                    });
             }
 
             m! {
                 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-                $v struct $name(num_bigint::BigUint);
+                $v struct $name($crate::prime::num_bigint::BigUint);
 
                 impl std::ops::Add<$name> for $name {
                     type Output = Self;
@@ -92,7 +95,7 @@ macro_rules! prime_fields {
             m! {
                 impl num::Zero for $name {
                     fn zero() -> Self {
-                        $name(num_bigint::BigUint::zero())
+                        $name($crate::prime::num_bigint::BigUint::zero())
                     }
 
                     fn is_zero(&self) -> bool {
@@ -103,7 +106,7 @@ macro_rules! prime_fields {
             m! {
                 impl num::One for $name {
                     fn one() -> Self {
-                        $name(num_bigint::BigUint::one())
+                        $name($crate::prime::num_bigint::BigUint::one())
                     }
 
                     fn is_one(&self) -> bool
@@ -117,7 +120,7 @@ macro_rules! prime_fields {
                     type FromStrRadixErr = num::bigint::ParseBigIntError;
 
                     fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-                        num_bigint::BigUint::from_str_radix(str, radix).map(|i| {
+                        $crate::prime::num_bigint::BigUint::from_str_radix(str, radix).map(|i| {
                             let n = i.modpow(&::num::One::one(), &"prime" $name.0);
                             $name(n)
                         })
@@ -147,15 +150,15 @@ macro_rules! prime_fields {
                 }
             }
             m! {
-                impl From<$name> for BigUint {
+                impl From<$name> for $crate::prime::num_bigint::BigUint {
                     fn from(v: $name) -> Self {
                         v.0
                     }
                 }
             }
             m! {
-                impl From<BigUint> for $name {
-                    fn from(v: BigUint) -> Self {
+                impl From<$crate::prime::num_bigint::BigUint> for $name {
+                    fn from(v: $crate::prime::num_bigint::BigUint) -> Self {
                         let mut g = v;
                         ::std::ops::RemAssign::rem_assign(&mut g, &"prime" $name.0);
                         $name(g)
@@ -166,14 +169,14 @@ macro_rules! prime_fields {
                 impl num::FromPrimitive for $name {
                     fn from_i64(n: i64) -> Option<Self> {
                         if n < 0 {
-                            BigUint::from_i64(-n).map(|a| ::std::ops::Sub::sub("prime" $name.clone(), a.into()))
+                            $crate::prime::num_bigint::BigUint::from_i64(-n).map(|a| ::std::ops::Sub::sub("prime" $name.clone(), a.into()))
                         } else {
-                            num_bigint::BigUint::from_i64(n).map(|o| o.into())
+                            $crate::prime::num_bigint::BigUint::from_i64(n).map(|o| o.into())
                         }
                     }
 
                     fn from_u64(n: u64) -> Option<Self> {
-                        num_bigint::BigUint::from_u64(n).map(|o| o.into())
+                        $crate::prime::num_bigint::BigUint::from_u64(n).map(|o| o.into())
                     }
                 }
             }
@@ -183,7 +186,7 @@ macro_rules! prime_fields {
                         "prime" $name.clone()
                     }
 
-                    fn as_uint(&self) -> BigUint {
+                    fn as_uint(&self) -> $crate::prime::num_bigint::BigUint {
                         self.0.clone()
                     }
                 }
@@ -229,17 +232,17 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
 
 // generate an example prime field structs
 prime_fields!(
-    pub Mersenne2(3),
-    pub Mersenne3(7),
-    pub Mersenne5(31),
-    pub Mersenne13(8191),
-    pub Mersenne17(131071),
-    pub Mersenne19(524287),
-    pub Mersenne31(2147483647),
-    pub Mersenne61(2305843009213693951),
-    pub Mersenne89(618970019642690137449562111),
-    pub Mersenne107(162259276829213363391578010288127),
-    pub Mersenne127(170141183460469231731687303715884105727));
+    pub Mersenne2("3"),
+    pub Mersenne3("7"),
+    pub Mersenne5("31"),
+    pub Mersenne13("8191"),
+    pub Mersenne17("131071"),
+    pub Mersenne19("524287"),
+    pub Mersenne31("2147483647"),
+    pub Mersenne61("2305843009213693951"),
+    pub Mersenne89("618970019642690137449562111"),
+    pub Mersenne107("162259276829213363391578010288127"),
+    pub Mersenne127("170141183460469231731687303715884105727"));
 
 /// This trait defines a function to randomly generate a prime number of a given size
 pub trait PrimeGenerator {
