@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::iter::{Product, Sum};
 
+use mashup::*;
 use num::{BigUint, FromPrimitive, Num};
 pub use num_bigint;
 use num_bigint::RandBigInt;
