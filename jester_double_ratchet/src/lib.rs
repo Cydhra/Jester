@@ -94,7 +94,6 @@ pub struct DoubleRatchetProtocol<
     MessageKdf: ConstantInputKeyRatchet<ChainKey=MessageChainKey, OutputKey=MessageKey>,
     DHKey: Clone,
     RootChainKey: Clone,
-    MessageChainKey: Clone,
     State: state::ProtocolState,
 {
     state: PhantomData<State>,
@@ -137,7 +136,6 @@ DoubleRatchetProtocol<
         KeyDerivationFunction<ChainKey=RootChainKey, Input=DHKey, OutputKey=MessageChainKey>,
         MessageKdf: ConstantInputKeyRatchet<ChainKey=MessageChainKey, OutputKey=MessageKey>,
         RootChainKey: Clone,
-        MessageChainKey: Clone,
         DHKey: Clone,
 {
     //noinspection RsFieldInitShorthand
@@ -272,7 +270,6 @@ DoubleRatchetProtocol<
         KeyDerivationFunction<ChainKey=RootChainKey, Input=DHKey, OutputKey=MessageChainKey>,
         MessageKdf: ConstantInputKeyRatchet<ChainKey=MessageChainKey, OutputKey=MessageKey>,
         RootChainKey: Clone,
-        MessageChainKey: Clone,
         DHKey: Clone,
 {
     //noinspection RsFieldInitShorthand
@@ -327,7 +324,7 @@ DoubleRatchetProtocol<
     ) -> DoubleRatchetAlgorithmMessage<DHKey, Box<[u8]>> {
         // update sending ratchet
         let (updated_sending_chain_key, message_key) =
-            MessageKdf::derive_key_without_input(self.sending_chain_key.as_ref().unwrap().clone());
+            MessageKdf::derive_key_without_input(self.sending_chain_key.take().unwrap());
         self.sending_chain_key = Some(updated_sending_chain_key);
 
         // encrypt message
