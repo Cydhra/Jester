@@ -100,7 +100,6 @@ pub struct DoubleRatchetProtocol<
     >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
     DHPublicKey: Clone + PartialEq,
-    RootChainKey: Clone,
     State: state::ProtocolState,
 {
     state: PhantomData<State>,
@@ -112,7 +111,7 @@ pub struct DoubleRatchetProtocol<
     diffie_hellman_public_key: DHPublicKey,
     diffie_hellman_private_key: Option<DHPrivateKey>,
     diffie_hellman_received_key: Option<DHPublicKey>,
-    root_chain_key: RootChainKey,
+    root_chain_key: Option<RootChainKey>,
     sending_chain_key: Option<MessageChainKey>,
     receiving_chain_key: Option<MessageChainKey>,
     sending_chain_length: usize,
@@ -160,7 +159,6 @@ where
         OutputKey = MessageChainKey,
     >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
-    RootChainKey: Clone,
     DHPublicKey: Clone + PartialEq,
 {
     //noinspection RsFieldInitShorthand
@@ -194,7 +192,7 @@ where
                 diffie_hellman_public_key: public_dh_key.clone(),
                 diffie_hellman_private_key: Some(private_dh_key),
                 diffie_hellman_received_key: None,
-                root_chain_key: initial_root_chain_key,
+                root_chain_key: Some(initial_root_chain_key),
                 sending_chain_key: None,
                 receiving_chain_key: None,
                 sending_chain_length: 0,
@@ -214,7 +212,7 @@ where
     /// #Parameters
     /// - `message` a `DoubleRatchetAlgorithmMessage` that is decrypted and used to advance the protocol state
     pub fn decrypt_first_message<R>(
-        self,
+        mut self,
         rng: &mut R,
         message: DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>,
     ) -> (
@@ -244,7 +242,7 @@ where
 
         // update receiving chain
         let (updated_root_key, receiving_key) =
-            RootKdf::derive_key(self.root_chain_key, generated_dh_shared_key);
+            RootKdf::derive_key(self.root_chain_key.take().unwrap(), generated_dh_shared_key);
         let (receiving_chain_key, message_key) =
             MessageKdf::derive_key_without_input(receiving_key);
 
@@ -270,7 +268,7 @@ where
                 diffie_hellman_public_key: new_dh_public_key,
                 diffie_hellman_private_key: Some(new_dh_private_key),
                 diffie_hellman_received_key: Some(message.public_key),
-                root_chain_key: updated_root_key,
+                root_chain_key: Some(updated_root_key),
                 sending_chain_key: Some(sending_key),
                 receiving_chain_key: Some(receiving_chain_key),
                 sending_chain_length: 0,
@@ -321,7 +319,6 @@ where
         OutputKey = MessageChainKey,
     >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
-    RootChainKey: Clone,
     DHPublicKey: Clone + PartialEq,
 {
     //noinspection RsFieldInitShorthand
@@ -362,7 +359,7 @@ where
             diffie_hellman_public_key: generated_dh_public_key,
             diffie_hellman_private_key: Some(generated_dh_private_key),
             diffie_hellman_received_key: Some(received_dh_public_key),
-            root_chain_key: new_root_key,
+            root_chain_key: Some(new_root_key),
             sending_chain_key: Some(sending_key),
             receiving_chain_key: None,
             sending_chain_length: 0,
@@ -422,7 +419,7 @@ where
 
             // update receiving chain
             let (updated_root_key, receiving_chain_key) =
-                RootKdf::derive_key(self.root_chain_key.clone(), generated_dh_private_key);
+                RootKdf::derive_key(self.root_chain_key.take().unwrap(), generated_dh_private_key);
             let (updated_receiving_chain_key, message_key) =
                 MessageKdf::derive_key_without_input(receiving_chain_key);
             self.receiving_chain_key = Some(updated_receiving_chain_key);
@@ -441,7 +438,7 @@ where
             self.diffie_hellman_private_key = Some(new_dh_private_key);
 
             // update root chain
-            self.root_chain_key = updated_root_key;
+            self.root_chain_key = Some(updated_root_key);
 
             // update stats
             self.previous_receiving_chain_length = self.receiving_chain_length;
