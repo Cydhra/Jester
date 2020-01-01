@@ -79,18 +79,27 @@ pub struct DoubleRatchetProtocol<
     EncryptionScheme,
     RootKdf,
     MessageKdf,
-    DHKey,
+    DHPublicKey,
+    DHPrivateKey,
+    DHSharedKey,
     RootChainKey,
     MessageChainKey,
     MessageKey,
     State,
 > where
-    DHScheme: DiffieHellmanKeyExchangeScheme<Key = DHKey>,
+    DHScheme: DiffieHellmanKeyExchangeScheme<
+        PublicKey = DHPublicKey,
+        PrivateKey = DHPrivateKey,
+        SharedKey = DHSharedKey,
+    >,
     EncryptionScheme: SymmetricalEncryptionScheme<Key = MessageKey>,
-    RootKdf:
-        KeyDerivationFunction<ChainKey = RootChainKey, Input = DHKey, OutputKey = MessageChainKey>,
+    RootKdf: KeyDerivationFunction<
+        ChainKey = RootChainKey,
+        Input = DHSharedKey,
+        OutputKey = MessageChainKey,
+    >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
-    DHKey: Clone + PartialEq,
+    DHPublicKey: Clone + PartialEq,
     RootChainKey: Clone,
     State: state::ProtocolState,
 {
@@ -99,10 +108,10 @@ pub struct DoubleRatchetProtocol<
     encryption_scheme: PhantomData<EncryptionScheme>,
     root_chain: PhantomData<RootKdf>,
     message_chains: PhantomData<MessageKdf>,
-    diffie_hellman_generator: DHKey,
-    diffie_hellman_public_key: DHKey,
-    diffie_hellman_private_key: Option<DHKey>,
-    diffie_hellman_received_key: Option<DHKey>,
+    diffie_hellman_generator: DHPublicKey,
+    diffie_hellman_public_key: DHPublicKey,
+    diffie_hellman_private_key: Option<DHPrivateKey>,
+    diffie_hellman_received_key: Option<DHPublicKey>,
     root_chain_key: RootChainKey,
     sending_chain_key: Option<MessageChainKey>,
     receiving_chain_key: Option<MessageChainKey>,
@@ -118,7 +127,9 @@ impl<
         EncryptionScheme,
         RootKdf,
         MessageKdf,
-        DHKey,
+        DHPublicKey,
+        DHPrivateKey,
+        DHSharedKey,
         RootChainKey,
         MessageChainKey,
         MessageKey,
@@ -128,20 +139,29 @@ impl<
         EncryptionScheme,
         RootKdf,
         MessageKdf,
-        DHKey,
+        DHPublicKey,
+        DHPrivateKey,
+        DHSharedKey,
         RootChainKey,
         MessageChainKey,
         MessageKey,
         state::Initiator,
     >
 where
-    DHScheme: DiffieHellmanKeyExchangeScheme<Key = DHKey>,
+    DHScheme: DiffieHellmanKeyExchangeScheme<
+        PublicKey = DHPublicKey,
+        PrivateKey = DHPrivateKey,
+        SharedKey = DHSharedKey,
+    >,
     EncryptionScheme: SymmetricalEncryptionScheme<Key = MessageKey>,
-    RootKdf:
-        KeyDerivationFunction<ChainKey = RootChainKey, Input = DHKey, OutputKey = MessageChainKey>,
+    RootKdf: KeyDerivationFunction<
+        ChainKey = RootChainKey,
+        Input = DHSharedKey,
+        OutputKey = MessageChainKey,
+    >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
     RootChainKey: Clone,
-    DHKey: Clone + PartialEq,
+    DHPublicKey: Clone + PartialEq,
 {
     //noinspection RsFieldInitShorthand
     /// Initialize the double ratchet protocol for the sending side, that starts by sending the other side an empty
@@ -153,14 +173,15 @@ where
     /// - `initial_root_chain_key` the initial common root key of both parties, agreed upon OTR
     pub fn initialize_sending<R>(
         rng: &mut R,
-        dh_generator: DHKey,
+        dh_generator: DHPublicKey,
         initial_root_chain_key: RootChainKey,
-    ) -> (Self, DoubleRatchetAlgorithmMessage<DHKey, Box<[u8]>>)
+    ) -> (Self, DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>)
     where
         R: RngCore + CryptoRng,
     {
         // generate diffie-hellman public key
-        let public_dh_key = DHScheme::generate_public_key(rng, &dh_generator);
+        let (private_dh_key, public_dh_key) =
+            DHScheme::generate_asymmetrical_key_pair(rng, &dh_generator);
 
         (
             Self {
@@ -171,7 +192,7 @@ where
                 message_chains: PhantomData,
                 diffie_hellman_generator: dh_generator,
                 diffie_hellman_public_key: public_dh_key.clone(),
-                diffie_hellman_private_key: None,
+                diffie_hellman_private_key: Some(private_dh_key),
                 diffie_hellman_received_key: None,
                 root_chain_key: initial_root_chain_key,
                 sending_chain_key: None,
@@ -195,14 +216,16 @@ where
     pub fn decrypt_first_message<R>(
         self,
         rng: &mut R,
-        message: DoubleRatchetAlgorithmMessage<DHKey, Box<[u8]>>,
+        message: DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>,
     ) -> (
         DoubleRatchetProtocol<
             DHScheme,
             EncryptionScheme,
             RootKdf,
             MessageKdf,
-            DHKey,
+            DHPublicKey,
+            DHPrivateKey,
+            DHSharedKey,
             RootChainKey,
             MessageChainKey,
             MessageKey,
@@ -214,12 +237,14 @@ where
         R: RngCore + CryptoRng,
     {
         // update diffie-hellman-ratchet
-        let generated_dh_private_key =
-            DHScheme::generate_shared_secret(&self.diffie_hellman_public_key, &message.public_key);
+        let generated_dh_shared_key = DHScheme::generate_shared_secret(
+            &self.diffie_hellman_private_key.unwrap(),
+            &message.public_key,
+        );
 
         // update receiving chain
         let (updated_root_key, receiving_key) =
-            RootKdf::derive_key(self.root_chain_key, generated_dh_private_key);
+            RootKdf::derive_key(self.root_chain_key, generated_dh_shared_key);
         let (receiving_chain_key, message_key) =
             MessageKdf::derive_key_without_input(receiving_key);
 
@@ -227,11 +252,12 @@ where
         let clear_text = EncryptionScheme::decrypt_message(&message_key, &message.message.unwrap());
 
         // update sending chain
-        let new_dh_public_key = DHScheme::generate_public_key(rng, &self.diffie_hellman_generator);
-        let new_dh_private_key =
-            DHScheme::generate_shared_secret(&new_dh_public_key, &message.public_key);
+        let (new_dh_private_key, new_dh_public_key) =
+            DHScheme::generate_asymmetrical_key_pair(rng, &self.diffie_hellman_generator);
+        let new_dh_shared_key =
+            DHScheme::generate_shared_secret(&new_dh_private_key, &message.public_key);
         let (updated_root_key, sending_key) =
-            RootKdf::derive_key(updated_root_key, new_dh_private_key.clone());
+            RootKdf::derive_key(updated_root_key, new_dh_shared_key);
 
         (
             DoubleRatchetProtocol {
@@ -241,7 +267,7 @@ where
                 root_chain: PhantomData,
                 message_chains: PhantomData,
                 diffie_hellman_generator: self.diffie_hellman_generator,
-                diffie_hellman_public_key: self.diffie_hellman_public_key,
+                diffie_hellman_public_key: new_dh_public_key,
                 diffie_hellman_private_key: Some(new_dh_private_key),
                 diffie_hellman_received_key: Some(message.public_key),
                 root_chain_key: updated_root_key,
@@ -262,7 +288,9 @@ impl<
         EncryptionScheme,
         RootKdf,
         MessageKdf,
-        DHKey,
+        DHPublicKey,
+        DHPrivateKey,
+        DHSharedKey,
         RootChainKey,
         MessageChainKey,
         MessageKey,
@@ -272,20 +300,29 @@ impl<
         EncryptionScheme,
         RootKdf,
         MessageKdf,
-        DHKey,
+        DHPublicKey,
+        DHPrivateKey,
+        DHSharedKey,
         RootChainKey,
         MessageChainKey,
         MessageKey,
         state::Established,
     >
 where
-    DHScheme: DiffieHellmanKeyExchangeScheme<Key = DHKey>,
+    DHScheme: DiffieHellmanKeyExchangeScheme<
+        PublicKey = DHPublicKey,
+        PrivateKey = DHPrivateKey,
+        SharedKey = DHSharedKey,
+    >,
     EncryptionScheme: SymmetricalEncryptionScheme<Key = MessageKey>,
-    RootKdf:
-        KeyDerivationFunction<ChainKey = RootChainKey, Input = DHKey, OutputKey = MessageChainKey>,
+    RootKdf: KeyDerivationFunction<
+        ChainKey = RootChainKey,
+        Input = DHSharedKey,
+        OutputKey = MessageChainKey,
+    >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
     RootChainKey: Clone,
-    DHKey: Clone + PartialEq,
+    DHPublicKey: Clone + PartialEq,
 {
     //noinspection RsFieldInitShorthand
     /// Initialize the double ratchet protocol for the receiving side, that gets the public key of the other party
@@ -298,21 +335,22 @@ where
     /// - `initial_root_chain_key` the initial common root key of both parties, agreed upon OTR
     pub fn initialize_receiving<R>(
         rng: &mut R,
-        dh_generator: DHKey,
-        received_dh_public_key: DHKey,
+        dh_generator: DHPublicKey,
+        received_dh_public_key: DHPublicKey,
         initial_root_chain_key: RootChainKey,
     ) -> Self
     where
         R: RngCore + CryptoRng,
     {
         // diffie hellman key exchange
-        let generated_dh_public_key = DHScheme::generate_public_key(rng, &dh_generator);
-        let dh_private_key =
-            DHScheme::generate_shared_secret(&generated_dh_public_key, &received_dh_public_key);
+        let (generated_dh_private_key, generated_dh_public_key) =
+            DHScheme::generate_asymmetrical_key_pair(rng, &dh_generator);
+        let dh_shared_key =
+            DHScheme::generate_shared_secret(&generated_dh_private_key, &received_dh_public_key);
 
         // root KDF initialization
         let (new_root_key, sending_key) =
-            RootKdf::derive_key(initial_root_chain_key, dh_private_key.clone());
+            RootKdf::derive_key(initial_root_chain_key, dh_shared_key);
 
         Self {
             state: PhantomData,
@@ -322,7 +360,7 @@ where
             message_chains: PhantomData,
             diffie_hellman_generator: dh_generator,
             diffie_hellman_public_key: generated_dh_public_key,
-            diffie_hellman_private_key: Some(dh_private_key),
+            diffie_hellman_private_key: Some(generated_dh_private_key),
             diffie_hellman_received_key: Some(received_dh_public_key),
             root_chain_key: new_root_key,
             sending_chain_key: Some(sending_key),
@@ -342,7 +380,7 @@ where
     pub fn encrypt_message(
         &mut self,
         message: &[u8],
-    ) -> DoubleRatchetAlgorithmMessage<DHKey, Box<[u8]>> {
+    ) -> DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>> {
         // update sending ratchet
         let (updated_sending_chain_key, message_key) =
             MessageKdf::derive_key_without_input(self.sending_chain_key.take().unwrap());
@@ -365,7 +403,7 @@ where
     pub fn decrypt_message<R>(
         &mut self,
         rng: &mut R,
-        message: DoubleRatchetAlgorithmMessage<DHKey, Box<[u8]>>,
+        message: DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>,
     ) -> Box<[u8]>
     where
         R: RngCore + CryptoRng,
@@ -378,7 +416,7 @@ where
         {
             // update diffie-hellman-ratchet
             let generated_dh_private_key = DHScheme::generate_shared_secret(
-                &self.diffie_hellman_public_key,
+                &self.diffie_hellman_private_key.take().unwrap(),
                 &message.public_key,
             );
 
@@ -390,13 +428,17 @@ where
             self.receiving_chain_key = Some(updated_receiving_chain_key);
 
             // update sending chain
-            let new_dh_public_key =
-                DHScheme::generate_public_key(rng, &self.diffie_hellman_generator);
-            let new_dh_private_key =
-                DHScheme::generate_shared_secret(&new_dh_public_key, &message.public_key);
+            let (new_dh_private_key, new_dh_public_key) =
+                DHScheme::generate_asymmetrical_key_pair(rng, &self.diffie_hellman_generator);
+            let new_dh_shared_key =
+                DHScheme::generate_shared_secret(&new_dh_private_key, &message.public_key);
             let (updated_root_key, sending_chain_key) =
-                RootKdf::derive_key(updated_root_key, new_dh_private_key.clone());
+                RootKdf::derive_key(updated_root_key, new_dh_shared_key);
             self.sending_chain_key = Some(sending_chain_key);
+
+            // update dh keys
+            self.diffie_hellman_public_key = new_dh_public_key;
+            self.diffie_hellman_private_key = Some(new_dh_private_key);
 
             // update root chain
             self.root_chain_key = updated_root_key;
