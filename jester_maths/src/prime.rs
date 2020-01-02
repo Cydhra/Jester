@@ -14,6 +14,22 @@ use rand::{CryptoRng, RngCore};
 
 /// A macro to the define one or multiple data types for large-prime-field algebra. It generates a data type from a
 /// given identifier and a string literal, that is then converted into a `BigUint` instance.
+/// # Examples
+/// ```
+/// // this macro requires a higher recursion limit
+/// #![recursion_limit="256"]
+///
+/// // sadly mashup cannot be re-exported and thus must be manually added to to dependencies by the implementor
+/// use mashup::*;
+/// use num::BigUint;
+/// use jester_maths::prime::PrimeField;
+/// use jester_maths::prime_fields;
+///
+/// prime_fields!(pub MersenneTest("7"));
+///
+/// // the type `MersenneTest` is generated and implements `PrimeField`
+/// assert_eq!(BigUint::from(7u64), MersenneTest::field_prime().as_uint());
+/// ```
 #[macro_export]
 macro_rules! prime_fields {
     ($($v:vis $name:ident($prime:literal)),*) => {
@@ -228,9 +244,9 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
     }
 
     /// Generate a random member of this field. This method must ensure that guarantees for the distribution of
-    /// generated field elements is not worse than guarantees by the underlying random number generator.
-    /// #Parameters
-    /// - `rng` a random number generator to be used for generating the element
+    /// generated field elements is not worse than guarantees by the underlying random number generator, however this
+    /// method might invoke the `rng` multiple times to achieve that. It is assumed that `rng` is well-seeded and
+    /// cryptographically secure.
     fn generate_random_member<R: RngCore + CryptoRng + RandBigInt>(rng: &mut R) -> Self {
         rng.gen_biguint_below(&Self::field_prime().as_uint()).into()
     }
