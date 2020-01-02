@@ -16,6 +16,7 @@ pub const INITIAL: SHA1Hash = SHA1Hash {
     e: 0xC3D2E1F0,
 };
 
+/// A SHA1 hash state. It consists mainly out of 5 double-words named `a`, `b`, `c`, `d` and `e`.
 #[derive(Debug, Copy, Clone)]
 pub struct SHA1Hash {
     pub a: u32,
@@ -28,12 +29,8 @@ pub struct SHA1Hash {
 impl SHA1Hash {
     /// SHA-1 round function that corresponds to the digestion of exactly one block of data. This block must be
     /// exactly `BLOCK_LENGTH_BYTES` long.
-    /// #Parameters
+    /// # Parameters
     /// - `input_block` a block of data to be digested
-    ///
-    /// #Output
-    /// While not returning a value, it changes the state of this hash object to the new state after digestion of
-    /// `input_block`
     pub fn round_function(&mut self, input_block: &[u8]) {
         assert_eq!(input_block.len(), BLOCK_LENGTH_BYTES);
 
@@ -136,10 +133,10 @@ impl HashFunction for SHA1Hash {
     const OUTPUT_SIZE: usize = mem::size_of::<Self>();
 
     /// Digest a full message of arbitrary size.
-    /// #Parameters
+    /// # Parameters
     /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
     ///
-    /// #Output
+    /// # Returns
     /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
     /// length was appended to the input data for digestion.
     fn digest_message(input: &[u8]) -> Self {
@@ -159,7 +156,7 @@ impl HashFunction for SHA1Hash {
         hash_state
     }
 
-    /// Generates a raw ``[u8; 20]`` array from the current hash state.
+    /// Generates a raw `[u8; 20]` array from the current hash state.
     fn raw(&self) -> Box<[u8]> {
         unsafe {
             mem::transmute::<[u32; 5], [u8; 20]>([

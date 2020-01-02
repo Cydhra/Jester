@@ -39,13 +39,13 @@ static MAGIC_SINUS_SCALARS: [u32; 64] = [
 ];
 
 impl MD5Hash {
-    /// compute one round of MD5
+    /// Compute one round of the MD5 hash function.
     ///
     /// # Parameters
-    /// ``input_block`` a 16 byte array containing one block of input data that shall be hashed
+    /// `input_block` a 16 byte array containing one block of input data that gets digested
     ///
     /// # Returns
-    /// A new ``MD5HashState`` computed from the input state and the input data block.
+    /// A new `MD5HashState` computed from the input state and the input data block.
     pub fn round_function(&mut self, input: &[u8]) {
         assert_eq!(input.len(), BLOCK_LENGTH_BYTES);
 
@@ -96,11 +96,10 @@ impl MD5Hash {
     }
 
     /// Apply padding to the last incomplete block and digest it. May digest two blocks, if the
-    /// padding itself overflows into a new block. The last block is automatically retrieved from ``input``.
-    /// ``input`` must be the complete message that is being hashed.
+    /// `input` must be the complete message that is being hashed.
     ///
     /// # Parameters
-    /// ``input`` the input array that shall be padded and applied. It can be longer than one block,
+    /// `input` the input array that shall be padded and applied. It can be longer than one block,
     /// all full blocks prefixing the array will be omitted.
     #[allow(clippy::cast_possible_truncation)]
     pub fn digest_last_block(&mut self, input: &[u8]) {
@@ -147,10 +146,10 @@ impl HashFunction for MD5Hash {
     const OUTPUT_SIZE: usize = mem::size_of::<Self>();
 
     /// Digest a full message of arbitrary size.
-    /// #Parameters
+    /// # Parameters
     /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
     ///
-    /// #Output
+    /// # Returns
     /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
     /// length was appended to the input data for digestion.
     fn digest_message(input: &[u8]) -> Self {
@@ -170,7 +169,7 @@ impl HashFunction for MD5Hash {
         hash_state
     }
 
-    /// Generates a raw ``[u8; 16]`` array from the current hash state.
+    /// Generates a raw `[u8; 16]` array from the current hash state.
     fn raw(&self) -> Box<[u8]> {
         unsafe {
             mem::transmute::<[u32; 4], [u8; 16]>([

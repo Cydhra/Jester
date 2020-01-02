@@ -1,3 +1,6 @@
+//! This crate contains various software-implementations of common hash algorithms. All implementations offer
+//! granular APIs, so the hash can be manually forged and manipulated.
+
 use std::{mem::MaybeUninit, ptr};
 
 pub mod hmac;
@@ -49,20 +52,15 @@ pub trait HashFunction {
     const OUTPUT_SIZE: usize;
 
     /// Digest a full message of arbitrary size.
-    /// #Parameters
+    /// # Parameters
     /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
     ///
-    /// #Output
-    /// Returns the hash state of the digested input data. No assumptions can be made about wether the state can be
+    /// # Returns
+    /// Returns the hash state of the digested input data. No assumptions can be made about whether the state can be
     /// used for further operations in the hash algorithm.
     fn digest_message(input: &[u8]) -> Self;
 
     /// Convert the type-safe hash object into a raw slice of unsigned bytes.
-    /// #Parameters
-    /// - `hash` the hash object
-    ///
-    /// #Output
-    /// A boxed slice of bytes.
     fn raw(&self) -> Box<[u8]>;
 }
 
