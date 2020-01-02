@@ -2,6 +2,8 @@
 //! encryption algorithms are not in scope of this crate, however a default implementation for the prime-field-based
 //! Diffie-Hellman-key-exchange protocol is provided.
 
+#![recursion_limit = "256"]
+
 use rand::{CryptoRng, RngCore};
 
 pub mod diffie_hellman;

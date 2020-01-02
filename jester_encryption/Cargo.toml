@@ -9,3 +9,7 @@ num = "0.2.0"
 num-bigint = { version = "0.2.3", features = ["rand"] }
 rand = "0.5.6"
 jester_maths = { path = "../jester_maths" }
+
+[dev-dependencies]
+mashup = "0.1.9" # TODO: this should be reexported by jester_maths, but it can't because mashup did a fukky wukky
+num-traits = "0.2.10"
