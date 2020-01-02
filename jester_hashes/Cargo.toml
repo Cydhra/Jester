@@ -5,7 +5,6 @@ authors = ["Cydhra <ubezl@student.kit.edu>"]
 edition = "2018"
 
 [dependencies]
-jester_util = { path = "../jester_util" }
 
 [dev-dependencies]
 hex = "0.3.2"

@@ -1,7 +1,0 @@
-[package]
-name = "jester_util"
-version = "0.1.0"
-authors = ["Cydhra <ubezl@student.kit.edu>"]
-edition = "2018"
-
-[dependencies]

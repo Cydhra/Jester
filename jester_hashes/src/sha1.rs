@@ -3,7 +3,7 @@
 use std::mem;
 use std::mem::size_of;
 
-use crate::HashFunction;
+use crate::{align_to_u32a_be, HashFunction};
 
 const BLOCK_LENGTH_BYTES: usize = 64;
 
@@ -38,31 +38,35 @@ impl SHA1Hash {
         assert_eq!(input_block.len(), BLOCK_LENGTH_BYTES);
 
         let mut extended_block = [0_u32; 80];
-        unsafe { jester_util::align_to_u32a_be(&mut extended_block[0..16], input_block) };
+        unsafe { align_to_u32a_be(&mut extended_block[0..16], input_block) };
 
         for i in 16..80 {
             extended_block[i] = u32::rotate_left(
-                extended_block[i - 3] ^ extended_block[i - 8] ^ extended_block[i - 14] ^ extended_block[i - 16], 1)
+                extended_block[i - 3]
+                    ^ extended_block[i - 8]
+                    ^ extended_block[i - 14]
+                    ^ extended_block[i - 16],
+                1,
+            )
         }
 
         let mut round_state = *self;
 
         for (i, data_word) in extended_block.iter().enumerate() {
             let (scrambled_data, magic_constant) = match i {
-                0..=19 => {
-                    ((round_state.b & round_state.c) | ((!round_state.b) & round_state.d), 0x5A827999)
-                }
-                20..=39 => {
-                    (round_state.b ^ round_state.c ^ round_state.d, 0x6ED9EBA1)
-                }
-                40..=59 => {
-                    ((round_state.b & round_state.c) | (round_state.b & round_state.d)
-                         | (round_state.c & round_state.d), 0x8F1BBCDC)
-                }
-                60..=79 => {
-                    (round_state.b ^ round_state.c ^ round_state.d, 0xCA62C1D6)
-                }
-                _ => unreachable!()
+                0..=19 => (
+                    (round_state.b & round_state.c) | ((!round_state.b) & round_state.d),
+                    0x5A827999,
+                ),
+                20..=39 => (round_state.b ^ round_state.c ^ round_state.d, 0x6ED9EBA1),
+                40..=59 => (
+                    (round_state.b & round_state.c)
+                        | (round_state.b & round_state.d)
+                        | (round_state.c & round_state.d),
+                    0x8F1BBCDC,
+                ),
+                60..=79 => (round_state.b ^ round_state.c ^ round_state.d, 0xCA62C1D6),
+                _ => unreachable!(),
             };
 
             let temp = u32::rotate_left(round_state.a, 5)
@@ -108,7 +112,8 @@ impl SHA1Hash {
             // append the message length in bits
             for i in 0..8 {
                 // note, that the number is appended backwards because it must be handled as a big endian number
-                overflow_block[BLOCK_LENGTH_BYTES - i - 1] = (message_length_bits >> (i * 8) as u64) as u8;
+                overflow_block[BLOCK_LENGTH_BYTES - i - 1] =
+                    (message_length_bits >> (i * 8) as u64) as u8;
             }
 
             self.round_function(&last_block);
@@ -143,7 +148,9 @@ impl HashFunction for SHA1Hash {
 
         // digest full blocks
         for block_index in 0..message_blocks_count {
-            hash_state.round_function(&input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES]);
+            hash_state.round_function(
+                &input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES],
+            );
         }
 
         // pad and digest last block
@@ -152,16 +159,18 @@ impl HashFunction for SHA1Hash {
         hash_state
     }
 
-
     /// Generates a raw ``[u8; 20]`` array from the current hash state.
     fn raw(&self) -> Box<[u8]> {
-            unsafe {
-                mem::transmute::<[u32; 5], [u8; 20]>([
-                    u32::from_be(self.a),
-                    u32::from_be(self.b),
-                    u32::from_be(self.c),
-                    u32::from_be(self.d),
-                    u32::from_be(self.e)])
-            }.to_vec().into()
+        unsafe {
+            mem::transmute::<[u32; 5], [u8; 20]>([
+                u32::from_be(self.a),
+                u32::from_be(self.b),
+                u32::from_be(self.c),
+                u32::from_be(self.d),
+                u32::from_be(self.e),
+            ])
+        }
+        .to_vec()
+        .into()
     }
 }

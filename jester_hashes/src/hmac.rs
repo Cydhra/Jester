@@ -10,7 +10,9 @@ use crate::HashFunction;
 /// #Outputs
 /// Returns a boxed slice containing the raw authentication code
 pub fn hmac<H>(key: &[u8], message: &[u8]) -> Box<[u8]>
-    where H: HashFunction {
+where
+    H: HashFunction,
+{
     let shortened_key = if key.len() > H::BLOCK_SIZE {
         H::digest_message(key).raw()
     } else {
@@ -23,7 +25,11 @@ pub fn hmac<H>(key: &[u8], message: &[u8]) -> Box<[u8]>
         shortened_key
     };
 
-    let mut outer_message = padded_key.clone().iter().map(|v| v ^ 0x5C).collect::<Vec<_>>();
+    let mut outer_message = padded_key
+        .clone()
+        .iter()
+        .map(|v| v ^ 0x5C)
+        .collect::<Vec<_>>();
     let mut inner_message = padded_key.iter().map(|v| v ^ 0x36).collect::<Vec<_>>();
 
     inner_message.append(&mut message.to_vec());
@@ -49,13 +55,17 @@ mod tests {
 
     #[test]
     fn test_hmac_md5() {
-        assert_eq!(hex::encode(hmac::<MD5Hash>(b"key", HMAC_EXAMPLE)),
-                   "80070713463e7749b90c2dc24911e275");
+        assert_eq!(
+            hex::encode(hmac::<MD5Hash>(b"key", HMAC_EXAMPLE)),
+            "80070713463e7749b90c2dc24911e275"
+        );
     }
 
     #[test]
     fn test_hmac_sha1() {
-        assert_eq!(hex::encode(hmac::<SHA1Hash>(b"key", HMAC_EXAMPLE)),
-                   "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9");
+        assert_eq!(
+            hex::encode(hmac::<SHA1Hash>(b"key", HMAC_EXAMPLE)),
+            "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
+        );
     }
 }
