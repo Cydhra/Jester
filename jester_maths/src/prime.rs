@@ -1,3 +1,7 @@
+//! This module defines the trait `PrimeField` to be used as a numerical data type for large-prime-field algebra.
+//! It also defines macros for defining such types and provides implementations for common operations on such.
+//! Furthermore, it provides types for prime fields built from Mersenne numbers.
+
 use std::fmt::Debug;
 use std::iter::{Product, Sum};
 
@@ -8,18 +12,20 @@ use num_bigint::RandBigInt;
 pub use once_cell;
 use rand::{CryptoRng, RngCore};
 
+/// A macro to the define one or multiple data types for large-prime-field algebra. It generates a data type from a
+/// given identifier and a string literal, that is then converted into a `BigUint` instance.
 #[macro_export]
 macro_rules! prime_fields {
     ($($v:vis $name:ident($prime:literal)),*) => {
 
         mashup! {
             $(
-                m["prime" $name] = PRIME_NUMBER_ $name;
+                $name["prime" $name] = PRIME_NUMBER_ $name;
             )*
         }
 
         $(
-            m! {
+            $name! {
                 static "prime" $name: $crate::prime::once_cell::sync::Lazy<$name> =
                     $crate::prime::once_cell::sync::Lazy::new (|| {
                         // do not parse this to a struct instance directly, because parsing that actually requires
@@ -28,7 +34,7 @@ macro_rules! prime_fields {
                     });
             }
 
-            m! {
+            $name! {
                 #[derive(Clone, Debug, PartialEq, PartialOrd)]
                 $v struct $name($crate::prime::num_bigint::BigUint);
 
@@ -43,7 +49,7 @@ macro_rules! prime_fields {
                 }
             }
 
-            m! {
+            $name! {
                 impl std::ops::Sub<$name> for $name {
                     type Output = Self;
 
@@ -60,7 +66,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl std::ops::Div<$name> for $name {
                     type Output = Self;
 
@@ -71,7 +77,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl std::ops::Mul<$name> for $name {
                     type Output = Self;
 
@@ -82,7 +88,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl std::ops::Rem<$name> for $name {
                     type Output = Self;
 
@@ -93,7 +99,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl num::Zero for $name {
                     fn zero() -> Self {
                         $name($crate::prime::num_bigint::BigUint::zero())
@@ -104,7 +110,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl num::One for $name {
                     fn one() -> Self {
                         $name($crate::prime::num_bigint::BigUint::one())
@@ -116,7 +122,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl num::Num for $name {
                     type FromStrRadixErr = num::bigint::ParseBigIntError;
 
@@ -128,7 +134,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl std::iter::Sum for $name {
                     fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
                         let mut tmp: $name = ::num::Zero::zero();
@@ -139,7 +145,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl std::iter::Product for $name {
                     fn product<I: Iterator<Item=Self>>(iter: I) -> Self {
                         let mut tmp: $name = ::num::One::one();
@@ -150,14 +156,14 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl From<$name> for $crate::prime::num_bigint::BigUint {
                     fn from(v: $name) -> Self {
                         v.0
                     }
                 }
             }
-            m! {
+            $name! {
                 impl From<$crate::prime::num_bigint::BigUint> for $name {
                     fn from(v: $crate::prime::num_bigint::BigUint) -> Self {
                         let mut g = v;
@@ -166,7 +172,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl num::FromPrimitive for $name {
                     fn from_i64(n: i64) -> Option<Self> {
                         if n < 0 {
@@ -181,7 +187,7 @@ macro_rules! prime_fields {
                     }
                 }
             }
-            m! {
+            $name! {
                 impl PrimeField for $name {
                     fn field_prime() -> Self {
                         "prime" $name.clone()
@@ -221,7 +227,6 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
         }
     }
 
-
     /// Generate a random member of this field. This method must ensure that guarantees for the distribution of
     /// generated field elements is not worse than guarantees by the underlying random number generator.
     /// #Parameters
@@ -248,7 +253,8 @@ prime_fields!(
 /// This trait defines a function to randomly generate a prime number of a given size
 pub trait PrimeGenerator {
     fn generate_random_prime<R>(rng: &mut R, bit_size: usize) -> BigUint
-        where R: RngCore + CryptoRng;
+    where
+        R: RngCore + CryptoRng;
 }
 
 #[cfg(test)]
@@ -261,13 +267,19 @@ mod tests {
     fn test_addition() {
         let result = Mersenne89::from_str_radix("618970019642690137449561873", 10).unwrap()
             + Mersenne89::from_str_radix("618970019642690137449560877", 10).unwrap();
-        assert_eq!(Mersenne89::from_str_radix("618970019642690137449560639", 10).unwrap(), result)
+        assert_eq!(
+            Mersenne89::from_str_radix("618970019642690137449560639", 10).unwrap(),
+            result
+        )
     }
 
     /// Test, whether an overflowing subtraction correctly wraps around the mersenne number 2^89-1
     #[test]
     fn test_subtraction() {
         let result = Mersenne89::one() - Mersenne89::from_str_radix("645784", 10).unwrap();
-        assert_eq!(Mersenne89::from_str_radix("618970019642690137448916328", 10).unwrap(), result)
+        assert_eq!(
+            Mersenne89::from_str_radix("618970019642690137448916328", 10).unwrap(),
+            result
+        )
     }
 }
