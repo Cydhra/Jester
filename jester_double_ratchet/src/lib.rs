@@ -7,14 +7,15 @@ use jester_encryption::SymmetricalEncryptionScheme;
 
 /// A trait modelling a key-derivation-function as defined by the specification of the Double
 /// Ratchet Algorithm by Trevor Perrin and Moxie Marlinspike.
-///
-/// #Associated Types
-/// - `ChainKey` the derivation key type
-/// - `Input` the data type of input to the derivation function
-/// - `OutputKey` the output key type
 pub trait KeyDerivationFunction {
+    /// The root key for the key derivation function. Each derivation generates a new root key, but it is not
+    /// intended for use outside of the function.
     type ChainKey;
+
+    /// The type of input data that is used to add further entropy to the KDF, providing break-in recovery.
     type Input;
+
+    /// The type of keys derived by this KDF. Those are meant for outside use.
     type OutputKey;
 
     /// Consume the current `chain_key` and `input` to generate a new derivation key and an output key.
@@ -40,7 +41,7 @@ pub trait ConstantInputKeyRatchet: KeyDerivationFunction {
 
 /// A message sent between parties within the double-ratchet-algorithm. It contains the cipher, (except in
 /// the very first message of the protocol initiator) and the public key to the diffie-hellman ratchet.
-/// #Type Parameters
+/// # Type Parameters
 /// - `K` the diffie-hellman key type
 /// - `C` the cipher text type
 pub struct DoubleRatchetAlgorithmMessage<K, C> {
@@ -48,15 +49,19 @@ pub struct DoubleRatchetAlgorithmMessage<K, C> {
     message: Option<C>,
 }
 
-/// The three states the double ratchet protocol can be in. The `Initiator` is the party that is trying to establish
+/// The two states the double ratchet protocol can be in. The `Initiator` is the party that is trying to establish
 /// a communication. The addressee can establish the protocol instantly, because it does not need an initialized
 /// receiving chain until it gets another message by the `Initiator`, and that will contain any information necessary
 /// to initialize it. The `Initiator`, however, has to wait for a response before it can switch to `Established`.
 pub mod state {
+    /// Common trait for all protocol states. It is just a marker trait.
     pub trait ProtocolState {}
 
+    /// The protocol is in this state, until the addressee of the channel responds for the first time, sending its
+    /// Diffie-Hellman public key
     pub struct Initiator;
 
+    /// This state is reached when the protocol is fully established.
     pub struct Established;
 
     impl ProtocolState for Initiator {}
@@ -64,8 +69,10 @@ pub mod state {
     impl ProtocolState for Established {}
 }
 
+/// Double-Ratchet-Algorithm protocol state. It has some phantom markers for the used primitives and keeps track of
+/// all state required during protocol execution-
 ///
-/// #Type Parameters
+/// # Type Parameters
 /// - `DHScheme` diffie-hellman key exchange scheme for the DH-ratchet
 /// - `EncryptionScheme` symmetrical encryption scheme for message encryption
 /// - `RootKdf` root key derivation function
@@ -165,7 +172,7 @@ where
     /// Initialize the double ratchet protocol for the sending side, that starts by sending the other side an empty
     /// message containing only a Diffie-Hellman public key. Also generates one initial message that must be sent to
     /// the other party, so the first Diffie-Hellman handshake can be established.
-    /// #Parameters
+    /// # Parameters
     /// - `rng` a cryptographically secure random number generator
     /// - `dh_generator` a pre-shared publicly known value of the Diffie-Hellman-Scheme key space used as generator
     /// - `initial_root_chain_key` the initial common root key of both parties, agreed upon OTR
@@ -209,7 +216,7 @@ where
 
     /// Decrypt the first message received from the addressee of the protocol exchange. It may contain user data,
     /// which is returned, alongside an updated protocol instance containing ready-to-use KDF chains.
-    /// #Parameters
+    /// # Parameters
     /// - `message` a `DoubleRatchetAlgorithmMessage` that is decrypted and used to advance the protocol state
     pub fn decrypt_first_message<R>(
         mut self,
@@ -325,11 +332,11 @@ where
     /// Initialize the double ratchet protocol for the receiving side, that gets the public key of the other party
     /// and can respond with an encrypted message and its own public key, kicking off the ratchet protocol and the
     /// key chains.
-    /// #Parameters
+    /// # Parameters
     /// - `rng` a cryptographically secure random number generator
     /// - `dh_generator` a pre-shared publicly known value of the Diffie-Hellman-Scheme key space used as generator
     /// - `received_dh_public_key` the other party's Diffie-Hellman public key, that kicks off the DH-Ratchet
-    /// - `initial_root_chain_key` the initial common root key of both parties, agreed upon OTR
+    /// - `initial_root_chain_key` the initial common root key of both parties, that was agreed upon off the record.
     pub fn initialize_receiving<R>(
         rng: &mut R,
         dh_generator: DHPublicKey,
@@ -371,7 +378,7 @@ where
 
     /// Send a message to the other protocol party. This must be done at least once to allow the other party to
     /// establish their ratchets.
-    /// #Parameters
+    /// # Parameters
     /// - `rng` a cryptographically secure random number generator
     /// - `message` the message clear text that gets encrypted and sent
     pub fn encrypt_message(
@@ -418,8 +425,10 @@ where
             );
 
             // update receiving chain
-            let (updated_root_key, receiving_chain_key) =
-                RootKdf::derive_key(self.root_chain_key.take().unwrap(), generated_dh_private_key);
+            let (updated_root_key, receiving_chain_key) = RootKdf::derive_key(
+                self.root_chain_key.take().unwrap(),
+                generated_dh_private_key,
+            );
             let (updated_receiving_chain_key, message_key) =
                 MessageKdf::derive_key_without_input(receiving_chain_key);
             self.receiving_chain_key = Some(updated_receiving_chain_key);
