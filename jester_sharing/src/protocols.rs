@@ -9,7 +9,7 @@ use num::{FromPrimitive, One};
 use num_bigint::BigUint;
 use rand::{CryptoRng, RngCore};
 
-use jester_algebra::prime::PrimeField;
+use jester_maths::prime::PrimeField;
 
 use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ParallelMultiplicationScheme, ThresholdSecretSharingScheme};
 
@@ -322,15 +322,15 @@ mod tests {
     use num::traits::{One, Zero};
     use rand::thread_rng;
 
-    use jester_algebra::prime::Mersenne89;
+    use jester_maths::prime::Mersenne89;
 
-    use crate::{CliqueCommunicationScheme};
+    use crate::CliqueCommunicationScheme;
     use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
     use crate::protocols::{joint_unbounded_inversion, joint_unbounded_or};
     use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
 
     /// A testing protocol that is carried out between two participants that do not randomize their inputs and do no
-                    /// communicate as all values are deterministic anyways.
+                        /// communicate as all values are deterministic anyways.
     struct TestProtocol {
         participant_id: usize,
     }

@@ -1,9 +1,9 @@
 //! This module contains a trait for a Diffie-Hellman-key-exchange protocol and a default implementation for all
-//! implementors of `PrimeField` as defined in `jester_algebra`.
+//! implementors of `PrimeField` as defined in `jester_maths`.
 
 use rand::{CryptoRng, RngCore};
 
-use jester_algebra::prime::PrimeField;
+use jester_maths::prime::PrimeField;
 
 /// A trait representing the symmetric key exchange scheme proposed by Diffie, Hellman and Merkle. Each party
 /// generates an asymmetrical key pair using `generate_asymmetrical_key_pair` and then exchanges public keys. Then

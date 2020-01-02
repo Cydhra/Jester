@@ -3,7 +3,7 @@ use std::pin::Pin;
 
 use futures::{future::join_all, join};
 
-use jester_algebra::prime::PrimeField;
+use jester_maths::prime::PrimeField;
 
 use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ParallelMultiplicationScheme, ThresholdSecretSharingScheme};
 

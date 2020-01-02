@@ -1,5 +1,5 @@
 [package]
-name = "jester_algebra"
+name = "jester_maths"
 version = "0.1.0"
 authors = ["Cydhra <ubezl@student.kit.edu>"]
 edition = "2018"
