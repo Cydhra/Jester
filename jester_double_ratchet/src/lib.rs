@@ -40,12 +40,16 @@ pub trait ConstantInputKeyRatchet: KeyDerivationFunction {
 }
 
 /// A message sent between parties within the double-ratchet-algorithm. It contains the cipher, (except in
-/// the very first message of the protocol initiator) and the public key to the diffie-hellman ratchet.
+/// the very first message of the protocol initiator) and the public key to the diffie-hellman ratchet. For handling
+/// of out-of-order messages the `message_number` and the `previous_chain_length` (both of the sending chain) are
+/// sent within the header. They can be used by the recipient to detect missing messages.
 /// # Type Parameters
 /// - `K` the diffie-hellman key type
 /// - `C` the cipher text type
 pub struct DoubleRatchetAlgorithmMessage<K, C> {
     public_key: K,
+    message_number: usize,
+    previous_chain_length: usize,
     message: Option<C>,
 }
 
@@ -209,6 +213,8 @@ where
             },
             DoubleRatchetAlgorithmMessage {
                 public_key: public_dh_key,
+                message_number: 0,
+                previous_chain_length: 0,
                 message: None,
             },
         )
@@ -398,6 +404,8 @@ where
 
         DoubleRatchetAlgorithmMessage {
             public_key: self.diffie_hellman_public_key.clone(),
+            message_number: self.sending_chain_length,
+            previous_chain_length: self.previous_sending_chain_length,
             message: Some(cipher_text),
         }
     }
