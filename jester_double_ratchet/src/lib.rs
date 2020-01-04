@@ -73,6 +73,18 @@ pub mod state {
     impl ProtocolState for Established {}
 }
 
+/// Exceptions that can happen during protocol execution. Those are handled within the protocol, not by the library
+/// user.
+enum ProtocolException<DHPublicKey> {
+    OutOfOrderMessage {
+        public_key: DHPublicKey,
+        message_number: usize,
+    },
+    IllegalMessageHeader {
+        message: &'static str,
+    },
+}
+
 /// Double-Ratchet-Algorithm protocol state. It has some phantom markers for the used primitives and keeps track of
 /// all state required during protocol execution-
 ///
@@ -479,5 +491,96 @@ where
 
         // decrypt message
         EncryptionScheme::decrypt_message(&message_key, &message.message.unwrap())
+    }
+}
+
+/// Using an incoming message and the current protocol state, detect, whether any messages have been missed. This is
+/// important for multiple reasons: the message keys of the missed messages must be stored, in case they arrive
+/// out-of-order. Furthermore, the message chain must be advanced sufficiently, so that the same key for decryption is
+/// used that was used for encryption.
+/// # Parameters
+/// - `protocol` an immutable reference to the current protocol state. no changes to the message chains are actually
+/// performed
+/// - `message` a reference to the latest message
+///
+/// # Returns
+/// A result of a tuple is returned, that contains the missed messages of the current receiving chain in its first
+/// parameter, and the missed messages of the next receiving chain, if a new one would be created by this message.
+/// Both parameters are simply zero, if no messages are missed. The result returns a `ProtocolException` if a message
+/// is received out-of-order or has an invalid message header.
+fn detect_missing_messages<
+    DHScheme,
+    EncryptionScheme,
+    RootKdf,
+    MessageKdf,
+    DHPublicKey,
+    DHPrivateKey,
+    DHSharedKey,
+    RootChainKey,
+    MessageChainKey,
+    MessageKey,
+    State,
+>(
+    protocol: &DoubleRatchetProtocol<
+        DHScheme,
+        EncryptionScheme,
+        RootKdf,
+        MessageKdf,
+        DHPublicKey,
+        DHPrivateKey,
+        DHSharedKey,
+        RootChainKey,
+        MessageChainKey,
+        MessageKey,
+        State,
+    >,
+    message: &DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>,
+) -> Result<(usize, usize), ProtocolException<DHPublicKey>>
+where
+    DHScheme: DiffieHellmanKeyExchangeScheme<
+        PublicKey = DHPublicKey,
+        PrivateKey = DHPrivateKey,
+        SharedKey = DHSharedKey,
+    >,
+    EncryptionScheme: SymmetricalEncryptionScheme<Key = MessageKey>,
+    RootKdf: KeyDerivationFunction<
+        ChainKey = RootChainKey,
+        Input = DHSharedKey,
+        OutputKey = MessageChainKey,
+    >,
+    MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
+    DHPublicKey: Clone + PartialEq,
+    State: state::ProtocolState,
+{
+    if protocol.diffie_hellman_received_key.is_none() {
+        // this is the first ever message received
+        // the message number tells how many messages came before that were missed
+        Ok((0, message.message_number))
+    } else if message.public_key.eq(protocol.diffie_hellman_received_key.as_ref().unwrap()) {
+        if message.message_number >= protocol.receiving_chain_length {
+            // this message belongs to the current chain, return the difference to the receiving chain length
+            return Ok((message.message_number - protocol.receiving_chain_length, 0));
+        } else {
+            // this message is received out of order and must be handled specially
+            Err(ProtocolException::OutOfOrderMessage {
+                public_key: message.public_key.clone(),
+                message_number: message.message_number,
+            })
+        }
+    } else {
+        if message.previous_chain_length >= protocol.receiving_chain_length {
+            // this message starts a new chain
+            // return the number of missed messages from the currently active chain and the number of messages missed
+            // in the new chain
+            Ok((
+                message.previous_chain_length - protocol.receiving_chain_length,
+                message.message_number,
+            ))
+        } else {
+            // the message reports less messages sent than received. Clearly something is wrong here!
+            Err(ProtocolException::IllegalMessageHeader {
+                message: "the message reports less messages sent in the last chain, than messages were received."
+            })
+        }
     }
 }
