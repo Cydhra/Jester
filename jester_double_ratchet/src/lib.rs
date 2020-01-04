@@ -4,6 +4,8 @@ use rand::{CryptoRng, RngCore};
 
 use jester_encryption::diffie_hellman::DiffieHellmanKeyExchangeScheme;
 use jester_encryption::SymmetricalEncryptionScheme;
+use std::collections::HashMap;
+use std::hash::Hash;
 
 /// A trait modelling a key-derivation-function as defined by the specification of the Double
 /// Ratchet Algorithm by Trevor Perrin and Moxie Marlinspike.
@@ -122,7 +124,7 @@ pub struct DoubleRatchetProtocol<
         OutputKey = MessageChainKey,
     >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
-    DHPublicKey: Clone + PartialEq,
+    DHPublicKey: Clone + Eq + Hash,
     State: state::ProtocolState,
 {
     state: PhantomData<State>,
@@ -141,7 +143,7 @@ pub struct DoubleRatchetProtocol<
     receiving_chain_length: usize,
     previous_sending_chain_length: usize,
     previous_receiving_chain_length: usize,
-    // TODO: dictionary of skipped messages
+    missed_messages: HashMap<(DHPublicKey, usize), MessageKey>,
 }
 
 impl<
@@ -182,7 +184,7 @@ where
         OutputKey = MessageChainKey,
     >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
-    DHPublicKey: Clone + PartialEq,
+    DHPublicKey: Clone + Eq + Hash,
 {
     //noinspection RsFieldInitShorthand
     /// Initialize the double ratchet protocol for the sending side, that starts by sending the other side an empty
@@ -222,6 +224,7 @@ where
                 receiving_chain_length: 0,
                 previous_sending_chain_length: 0,
                 previous_receiving_chain_length: 0,
+                missed_messages: HashMap::new()
             },
             DoubleRatchetAlgorithmMessage {
                 public_key: public_dh_key,
@@ -300,6 +303,7 @@ where
                 receiving_chain_length: 1,
                 previous_sending_chain_length: 0,
                 previous_receiving_chain_length: 0,
+                missed_messages: HashMap::new()
             },
             clear_text,
         )
@@ -344,7 +348,7 @@ where
         OutputKey = MessageChainKey,
     >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
-    DHPublicKey: Clone + PartialEq,
+    DHPublicKey: Clone + Eq + Hash,
 {
     //noinspection RsFieldInitShorthand
     /// Initialize the double ratchet protocol for the receiving side, that gets the public key of the other party
@@ -391,6 +395,7 @@ where
             receiving_chain_length: 0,
             previous_sending_chain_length: 0,
             previous_receiving_chain_length: 0,
+            missed_messages: HashMap::new()
         }
     }
 
@@ -549,7 +554,7 @@ where
         OutputKey = MessageChainKey,
     >,
     MessageKdf: ConstantInputKeyRatchet<ChainKey = MessageChainKey, OutputKey = MessageKey>,
-    DHPublicKey: Clone + PartialEq,
+    DHPublicKey: Clone + Eq + Hash,
     State: state::ProtocolState,
 {
     if protocol.diffie_hellman_received_key.is_none() {
