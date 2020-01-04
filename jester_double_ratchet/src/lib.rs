@@ -413,6 +413,8 @@ where
             MessageKdf::derive_key_without_input(self.sending_chain_key.take().unwrap());
         self.sending_chain_key = Some(updated_sending_chain_key);
 
+        let current_message_number = self.sending_chain_length;
+
         // update statistics
         self.sending_chain_length += 1;
 
@@ -421,7 +423,7 @@ where
 
         DoubleRatchetAlgorithmMessage {
             public_key: self.diffie_hellman_public_key.clone(),
-            message_number: self.sending_chain_length,
+            message_number: current_message_number,
             previous_chain_length: self.previous_sending_chain_length,
             message: Some(cipher_text),
         }
