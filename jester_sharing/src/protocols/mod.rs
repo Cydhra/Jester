@@ -25,23 +25,6 @@ mod tests {
     mod test_implementations;
 
     #[test]
-    fn test_protocol() {
-        let mut protocol = TestProtocol { participant_id: 1 };
-        let mut rng = thread_rng();
-
-        block_on(async {
-            let shares = protocol
-                .distribute_secret(TestPrimeField::one() + TestPrimeField::one())
-                .await;
-            let inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &shares).await;
-            let doubly_inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &inverse).await;
-            let revealed = protocol.reveal_shares(doubly_inverse[0].clone()).await;
-
-            assert_eq!(TestPrimeField::one() + TestPrimeField::one(), revealed);
-        })
-    }
-
-    #[test]
     fn test_unbounded_or_one() {
         let mut protocol = TestProtocol { participant_id: 1 };
 
@@ -91,6 +74,23 @@ mod tests {
             assert_eq!(inverses[0].1, TestPrimeField::from(BigUint::from(1u32)));
             assert_eq!(inverses[1].1, TestPrimeField::from(BigUint::from(2u32)));
             assert_eq!(inverses[2].1, TestPrimeField::from(BigUint::from(6u32)));
+        })
+    }
+
+    #[test]
+    fn test_double_inversion() {
+        let mut protocol = TestProtocol { participant_id: 1 };
+        let mut rng = thread_rng();
+
+        block_on(async {
+            let shares = protocol
+                .distribute_secret(BigUint::from(2u32).into())
+                .await;
+            let inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &shares).await;
+            let doubly_inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &inverse).await;
+            let revealed = protocol.reveal_shares(doubly_inverse[0].clone()).await;
+
+            assert_eq!(revealed, BigUint::from(2u32).into());
         })
     }
 }
