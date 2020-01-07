@@ -1,39 +1,86 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
-use futures::{future::join_all, join};
 use futures::lock::Mutex;
+use futures::{future::join_all, join};
 use num::{FromPrimitive, One};
 use num_bigint::BigUint;
 use rand::{CryptoRng, RngCore};
 
 use jester_maths::prime::PrimeField;
 
-use crate::{CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme, ParallelMultiplicationScheme, ThresholdSecretSharingScheme};
+use crate::{
+    CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme,
+    ParallelMultiplicationScheme, ThresholdSecretSharingScheme,
+};
 
 /// A protocol to generate a secret random number where every participant has a share on that number, but no
 /// participant learns the actual value of that number.
-/// #Parameters
+///
+/// # Parameters
 /// - `rng` a cryptographically secure random number generator
 /// - `protocol` an instance of the protocol to be used. It must be a linear `ThresholdSecretSharingScheme` with
 /// `PeerToPeerPartyScheme` communication style
 ///
-/// #Output
+/// # Returns
 /// Returns a future on the value that is to be generated. The future does not hold references to `rng` and
 /// `protocol` so this method can be called multiple times in parallel.
-pub fn joint_random_number_sharing<R, T, S, P>(rng: &mut R, protocol: &mut P) -> impl Future<Output=S>
-    where R: RngCore + CryptoRng,
-          T: PrimeField,
-          S: 'static,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> {
+pub fn joint_random_number_sharing<R, T, S, P>(
+    rng: &mut R,
+    protocol: &mut P,
+) -> impl Future<Output = S>
+where
+    R: RngCore + CryptoRng,
+    T: PrimeField,
+    S: 'static,
+    P: ThresholdSecretSharingScheme<T, S>
+        + LinearSharingScheme<T, S>
+        + CliqueCommunicationScheme<T, S>,
+{
     let rand_partial = T::generate_random_member(rng);
     let all_shares_future = protocol.distribute_secret(rand_partial);
 
-    async move {
-        P::sum_shares(&all_shares_future.await).unwrap()
+    async move { P::sum_shares(&all_shares_future.await).unwrap() }
+}
+
+/// A protocol to generate a secret random number where every participant has a share on that number, but no
+/// participant learns the actual value of that number. This protocol involves that every party
+/// member generates a private random element. To avoid generating zero, this protocol will be
+/// regenerating the private random element until it is not zero. Since this does not guarantee
+/// that the random shared value is not actually zero and, moreover, could alter the
+/// probabilistic distribution of generated values, this method is not public.
+///
+/// # Parameters
+/// - `rng` a cryptographically secure random number generator
+/// - `protocol` an instance of the protocol to be used. It must be a linear `ThresholdSecretSharingScheme` with
+/// `PeerToPeerPartyScheme` communication style
+///
+/// # Returns
+/// Returns a future on the value that is to be generated. The future does not hold references to `rng` and
+/// `protocol` so this method can be called multiple times in parallel.
+fn joint_random_non_zero_number_sharing<R, T, S, P>(
+    rng: &mut R,
+    protocol: &mut P,
+) -> impl Future<Output = S>
+    where
+        R: RngCore + CryptoRng,
+        T: PrimeField,
+        S: 'static,
+        P: ThresholdSecretSharingScheme<T, S>
+        + LinearSharingScheme<T, S>
+        + CliqueCommunicationScheme<T, S>,
+{
+    let mut rand_partial = T::generate_random_member(rng);
+    while rand_partial.is_zero() {
+        rand_partial = T::generate_random_member(rng);
     }
+
+    let all_shares_future = protocol.distribute_secret(rand_partial);
+
+    async move { P::sum_shares(&all_shares_future.await).unwrap() }
 }
 
 /// A protocol for the joint selection of either side of a ternary expression `condition ? lhs : rhs` without
@@ -53,10 +100,19 @@ pub fn joint_random_number_sharing<R, T, S, P>(rng: &mut R, protocol: &mut P) ->
 /// #Output
 /// Returns a future on either `lhs` or `rhs`, but in a rerandomized share, so a participant cannot learn which one
 /// was taken.
-pub async fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &S, lhs: &S, rhs: &S) -> S
-    where T: PrimeField,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
-          MultiplicationScheme<T, S> {
+pub async fn joint_conditional_selection<T, S, P>(
+    protocol: &mut P,
+    condition: &S,
+    lhs: &S,
+    rhs: &S,
+) -> S
+where
+    T: PrimeField,
+    P: ThresholdSecretSharingScheme<T, S>
+        + LinearSharingScheme<T, S>
+        + CliqueCommunicationScheme<T, S>
+        + MultiplicationScheme<T, S>,
+{
     let operands_difference = P::sub_shares(lhs, rhs);
 
     // copy rhs to move a copy into the future
@@ -75,32 +131,47 @@ pub async fn joint_conditional_selection<T, S, P>(protocol: &mut P, condition: &
 ///
 /// # Output
 /// Returns a `Vec` of shares that are the inverted input elements in the same order.
-pub async fn joint_unbounded_inversion<R, T, S, P>(rng: &mut R, protocol: &mut P, elements: &[S]) -> Vec<S>
-    where R: RngCore + CryptoRng,
-          T: PrimeField,
-          S: Clone + 'static,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
-          ParallelMultiplicationScheme<T, S> {
+pub async fn joint_unbounded_inversion<R, T, S, P>(
+    rng: &mut R,
+    protocol: &mut P,
+    elements: &[S],
+) -> Vec<S>
+where
+    R: RngCore + CryptoRng,
+    T: PrimeField,
+    S: Clone + 'static,
+    P: ThresholdSecretSharingScheme<T, S>
+        + LinearSharingScheme<T, S>
+        + CliqueCommunicationScheme<T, S>
+        + ParallelMultiplicationScheme<T, S>,
+{
     let bound = elements.len();
     let helpers: Vec<_> = (0..bound)
-        .map(|_| joint_random_number_sharing(rng, protocol))
+        .map(|_| joint_random_non_zero_number_sharing(rng, protocol))
         .collect();
     let helpers = join_all(helpers).await;
 
-    let rerandomized_elements = protocol.parallel_multiply(&elements.iter()
-        .cloned()
-        .zip(helpers.clone())
-        .collect::<Vec<_>>())
+    let rerandomized_elements = protocol
+        .parallel_multiply(
+            &elements
+                .iter()
+                .cloned()
+                .zip(helpers.clone())
+                .collect::<Vec<_>>(),
+        )
         .await;
 
-    let revealed_elements = rerandomized_elements.into_iter()
+    let revealed_elements = rerandomized_elements
+        .into_iter()
         .map(|e| protocol.reveal_shares(e));
     let revealed_elements = join_all(revealed_elements).await;
 
-    revealed_elements.into_iter()
+    let inverses = revealed_elements
+        .into_iter()
         .zip(helpers)
         .map(|(hidden_element, helper)| P::multiply_scalar(&helper, &hidden_element.inverse()))
-        .collect()
+        .collect();
+    inverses
 }
 
 /// A function generating the upper triangular matrix U that is defined by V = U * L, where V is the inverted
@@ -368,18 +439,30 @@ mod tests {
             2
         }
 
-        fn obtain_beaver_triples<'a>(&'a mut self, count: usize)
-                                     -> Pin<Box<dyn Future<Output=Vec<((usize, TestPrimeField), (usize, TestPrimeField),
-                                                                       (usize, TestPrimeField))>> + Send + 'a>> {
-            Box::pin(
-                async move {
-                    repeat(((self.participant_id, TestPrimeField::one()),
-                            (self.participant_id, TestPrimeField::one()),
-                            (self.participant_id, TestPrimeField::one())))
-                        .take(count)
-                        .collect()
-                }
-            )
+        fn obtain_beaver_triples<'a>(
+            &'a mut self,
+            count: usize,
+        ) -> Pin<
+            Box<
+                dyn Future<
+                        Output = Vec<(
+                            (usize, TestPrimeField),
+                            (usize, TestPrimeField),
+                            (usize, TestPrimeField),
+                        )>,
+                    > + Send
+                    + 'a,
+            >,
+        > {
+            Box::pin(async move {
+                repeat((
+                    (self.participant_id, TestPrimeField::one()),
+                    (self.participant_id, TestPrimeField::one()),
+                    (self.participant_id, TestPrimeField::one()),
+                ))
+                .take(count)
+                .collect()
+            })
         }
     }
 
@@ -388,16 +471,14 @@ mod tests {
         let mut protocol = TestProtocol { participant_id: 1 };
         let mut rng = thread_rng();
 
-        block_on(
-            async {
-//                let shares = protocol.distribute_secret(TestPrimeField::one() + TestPrimeField::one()).await;
-//                let inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &shares).await;
-//                let doubly_inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &inverse).await;
-//                let revealed = protocol.reveal_shares(doubly_inverse[0].clone()).await;
-//
-//                assert_eq!(TestPrimeField::one() + TestPrimeField::one(), revealed);
-            }
-        )
+        block_on(async {
+            //                let shares = protocol.distribute_secret(TestPrimeField::one() + TestPrimeField::one()).await;
+            //                let inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &shares).await;
+            //                let doubly_inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &inverse).await;
+            //                let revealed = protocol.reveal_shares(doubly_inverse[0].clone()).await;
+            //
+            //                assert_eq!(TestPrimeField::one() + TestPrimeField::one(), revealed);
+        })
     }
 
     #[test]
@@ -405,7 +486,11 @@ mod tests {
         let mut protocol = TestProtocol { participant_id: 1 };
 
         block_on(async {
-            let bits = vec![(1, TestPrimeField::one()), (1, TestPrimeField::one()), (1, TestPrimeField::zero())];
+            let bits = vec![
+                (1, TestPrimeField::one()),
+                (1, TestPrimeField::one()),
+                (1, TestPrimeField::zero()),
+            ];
 
             let or = joint_unbounded_or(&mut thread_rng(), &mut protocol, &bits).await;
             let revealed = protocol.reveal_shares(or).await;
@@ -419,9 +504,11 @@ mod tests {
         let mut rng = thread_rng();
 
         block_on(async {
-            let elements: Vec<(usize, TestPrimeField)> = vec![(1, BigUint::from(1u32).into()),
-                                                              (1, BigUint::from(4u32).into()),
-                                                              (1, BigUint::from(6u32).into())];
+            let elements: Vec<(usize, TestPrimeField)> = vec![
+                (1, BigUint::from(1u32).into()),
+                (1, BigUint::from(4u32).into()),
+                (1, BigUint::from(6u32).into()),
+            ];
             let inverses = joint_unbounded_inversion(&mut rng, &mut protocol, &elements[..]).await;
 
             assert_eq!(inverses[0].1, TestPrimeField::from(BigUint::from(1u32)));
