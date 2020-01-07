@@ -2,7 +2,7 @@ use std::future::Future;
 
 use crate::{CliqueCommunicationScheme, LinearSharingScheme, ThresholdSecretSharingScheme};
 
-use crate::protocols::{CryptoRng, PrimeField, RngCore};
+use crate::{CryptoRng, PrimeField, RngCore};
 
 /// A protocol to generate a secret random number where every participant has a share on that number, but no
 /// participant learns the actual value of that number.

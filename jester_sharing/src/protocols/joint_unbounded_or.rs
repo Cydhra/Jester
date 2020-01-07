@@ -5,17 +5,15 @@ use std::pin::Pin;
 
 use futures::lock::Mutex;
 use futures::{future::join_all, join};
+use lazy_static::*;
 use num::FromPrimitive;
 
 use crate::{
-    CliqueCommunicationScheme, LinearSharingScheme, ParallelMultiplicationScheme,
-    ThresholdSecretSharingScheme,
+    BigUint, CliqueCommunicationScheme, CryptoRng, LinearSharingScheme,
+    ParallelMultiplicationScheme, PrimeField, RngCore, ThresholdSecretSharingScheme,
 };
 
-use crate::protocols::{
-    joint_random_non_zero_number_sharing, joint_unbounded_inversion, BigUint, CryptoRng,
-    PrimeField, RngCore,
-};
+use crate::protocols::{joint_random_non_zero_number_sharing, joint_unbounded_inversion};
 
 /// A function generating the upper triangular matrix U that is defined by V = U * L, where V is the inverted
 /// Vandermonde matrix. The function generates the matrix recursively and caches results to be used later on.

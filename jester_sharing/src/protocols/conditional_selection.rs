@@ -3,7 +3,7 @@ use crate::{
     ThresholdSecretSharingScheme,
 };
 
-use crate::protocols::PrimeField;
+use crate::PrimeField;
 
 /// A protocol for the joint selection of either side of a ternary expression `condition ? lhs : rhs` without
 /// any participant learning the value of `condition` or the expression chosen by the protocol. This protocol cannot

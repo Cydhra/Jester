@@ -7,10 +7,6 @@ pub use self::joint_unbounded_inversion::*;
 pub use self::joint_unbounded_or::*;
 pub use self::random_number_generation::*;
 
-pub use jester_maths::prime::PrimeField;
-pub use num_bigint::BigUint;
-pub use rand::{CryptoRng, RngCore};
-
 mod conditional_selection;
 mod joint_unbounded_inversion;
 mod joint_unbounded_or;

@@ -1,9 +1,9 @@
+use crate::{CryptoRng, RngCore};
 use num::pow::pow;
 use num::{BigUint, FromPrimitive};
 use num_bigint::RandBigInt;
-use rand::{CryptoRng, RngCore};
 
-use jester_maths::prime::PrimeField;
+use crate::PrimeField;
 
 use crate::{LinearSharingScheme, ThresholdSecretSharingScheme};
 

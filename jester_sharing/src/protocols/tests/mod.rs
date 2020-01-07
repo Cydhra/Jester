@@ -2,9 +2,9 @@
 
 use super::*;
 use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
-use crate::protocols::PrimeField;
 use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
 use crate::CliqueCommunicationScheme;
+use crate::{BigUint, PrimeField};
 
 use futures::executor::block_on;
 use num::traits::{One, Zero};

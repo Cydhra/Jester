@@ -5,7 +5,8 @@ use crate::{
     ThresholdSecretSharingScheme,
 };
 
-use crate::protocols::{joint_random_non_zero_number_sharing, CryptoRng, PrimeField, RngCore};
+use crate::protocols::joint_random_non_zero_number_sharing;
+use crate::{CryptoRng, PrimeField, RngCore};
 
 /// A protocol inverting an unbounded amount of shares in parallel. The protocol requires two round-trip-times in a
 /// `CliqueCommunicationScheme`. This protocol relies on the fact, tht the input parameters are not zero. If one
