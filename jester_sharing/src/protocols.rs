@@ -86,7 +86,7 @@ where
 /// any participant learning the value of `condition` or the expression chosen by the protocol. This protocol cannot
 /// be invoked in parallel, as it uses a two-stage multiplication protocol.
 ///
-/// #Parameters
+/// # Parameters
 /// - `protocol` an instance of the sub-protocols used. It must be a `ThresholdSecretSharingScheme` with additive
 /// linear shares and communication between all participants. Furthermore multiplication by communication must be
 /// supported.
@@ -96,7 +96,7 @@ where
 /// - `lhs` the left hand side of the if-else expression that is taken, if `condition` evaluates to `1`
 /// - `rhs` the right hand side of the if-else expression that is taken, if `condition` evaluates to `0`
 ///
-/// #Output
+/// # Returns
 /// Returns a future on either `lhs` or `rhs`, but in a rerandomized share, so a participant cannot learn which one
 /// was taken.
 pub async fn joint_conditional_selection<T, S, P>(
@@ -120,7 +120,10 @@ where
 }
 
 /// A protocol inverting an unbounded amount of shares in parallel. The protocol requires two round-trip-times in a
-/// `CliqueCommunicationScheme`.
+/// `CliqueCommunicationScheme`. This protocol relies on the fact, tht the input parameters are not zero. If one
+/// input parameter is a share on the value zero, the protocol will output random garbage. Since the garbage might not
+/// lead to a successful calculation, participants could learn that the input had at least one zero in it.
+///
 /// # Parameters
 /// - `rng` a cryptographically secure random number generator
 /// - `protocol` an instance of the sub-protocols used. It must be a `ThresholdSecretSharingScheme` with additive
@@ -128,7 +131,7 @@ where
 /// must be supported.
 /// - `elements` the shares that shall be inverted
 ///
-/// # Output
+/// # Returns
 /// Returns a `Vec` of shares that are the inverted input elements in the same order.
 pub async fn joint_unbounded_inversion<R, T, S, P>(
     rng: &mut R,
@@ -175,6 +178,7 @@ where
 /// A function generating the upper triangular matrix U that is defined by V = U * L, where V is the inverted
 /// Vandermonde matrix. The function generates the matrix recursively and caches results to be used later on.
 /// Asynchronicity is used to wait on a lock onto the global cache it uses for pre-calculated entries.
+///
 /// # Parameters
 /// - `row` row of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
 /// - `column` column of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
@@ -238,6 +242,7 @@ where
 /// A function generating the lower triangular matrix L that is defined by V = U * L, where V is the inverted
 /// Vandermonde matrix. The function generates the matrix recursively and caches results to be used later on.
 /// Asynchronicity is used to wait on a lock onto the global cache it uses for pre-calculated entries.
+///
 /// # Parameters
 /// - `row` row of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
 /// - `column` column of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
@@ -286,6 +291,7 @@ where
 
 /// Asynchronously get the entries of an inverted vandermonde matrix of given size. This function does not cache
 /// results, as results change on different matrix sizes.
+///
 /// # Parameters
 /// - `row` row of requested entry. Starts at zero. Negative entries will result in unexpected behaviour.
 /// - `column` column of requested entry. Starts at zero. Negative entries will result in unexpected behaviour.
