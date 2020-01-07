@@ -1,5 +1,5 @@
-use num::{BigUint, FromPrimitive};
 use num::pow::pow;
+use num::{BigUint, FromPrimitive};
 use num_bigint::RandBigInt;
 use rand::{CryptoRng, RngCore};
 
@@ -10,14 +10,18 @@ use crate::{LinearSharingScheme, ThresholdSecretSharingScheme};
 /// A trait marking a special instance of a additive linear threshold secret sharing scheme invented by Adi Shamir. A
 /// protocol implementing this trait does not have to provide implementations for `ThresholdSecretSharingScheme` nor
 /// `LinearSharingScheme` as they are provided by this module.
-pub trait ShamirSecretSharingScheme<T>: ThresholdSecretSharingScheme<T, (usize, T)> + LinearSharingScheme<T, (usize, T)> {
+pub trait ShamirSecretSharingScheme<T>:
+    ThresholdSecretSharingScheme<T, (usize, T)> + LinearSharingScheme<T, (usize, T)>
+{
     // this is a marker trait
 }
 
 /// Shamir's secret sharing scheme is linear for addition. Addition implemented by simply delegating the calls to `T`
 impl<T, P> LinearSharingScheme<T, (usize, T)> for P
-    where T: PrimeField,
-          P: ShamirSecretSharingScheme<T> {
+where
+    T: PrimeField,
+    P: ShamirSecretSharingScheme<T>,
+{
     fn add_shares(lhs: &(usize, T), rhs: &(usize, T)) -> (usize, T) {
         assert_eq!(lhs.0.clone(), rhs.0.clone());
         (lhs.0, lhs.1.clone() + rhs.1.clone())
@@ -45,19 +49,30 @@ impl<T, P> LinearSharingScheme<T, (usize, T)> for P
             None
         } else {
             // assert that all shares are of the same x value
-            assert!(shares.iter().fold(shares.get(0).map(|x| x.0),
-                                       |acc, val| if acc == Some(val.0) { acc } else { None }).is_some());
+            assert!(shares
+                .iter()
+                .fold(shares.get(0).map(|x| x.0), |acc, val| {
+                    if acc == Some(val.0) {
+                        acc
+                    } else {
+                        None
+                    }
+                })
+                .is_some());
 
-            Some((shares.get(0).unwrap().0, shares.iter()
-                .map(|(_, y)| y.clone())
-                .sum()))
+            Some((
+                shares.get(0).unwrap().0,
+                shares.iter().map(|(_, y)| y.clone()).sum(),
+            ))
         }
     }
 }
 
 impl<T, P> ThresholdSecretSharingScheme<T, (usize, T)> for P
-    where T: PrimeField,
-          P: ShamirSecretSharingScheme<T> {
+where
+    T: PrimeField,
+    P: ShamirSecretSharingScheme<T>,
+{
     /// Generate a random polynomial `f` and `count` solutions `sn = f(n)` where `n != 0` as shares. The secret is
     /// the solution `secret = f(0)` of the polynomial and each share is the solution of `f(i)` where `i - 1` is the
     /// index within the returned vector.
@@ -69,8 +84,15 @@ impl<T, P> ThresholdSecretSharingScheme<T, (usize, T)> for P
     ///
     /// #Output
     /// Returns a vector of `count` shares
-    fn generate_shares<R>(rng: &mut R, secret: &T, count: usize, threshold: usize) -> Vec<(usize, T)>
-        where R: RngCore + CryptoRng + RandBigInt {
+    fn generate_shares<R>(
+        rng: &mut R,
+        secret: &T,
+        count: usize,
+        threshold: usize,
+    ) -> Vec<(usize, T)>
+    where
+        R: RngCore + CryptoRng + RandBigInt,
+    {
         assert!(threshold > 1);
 
         let polynomial = (1..threshold)
@@ -78,9 +100,17 @@ impl<T, P> ThresholdSecretSharingScheme<T, (usize, T)> for P
             .collect::<Vec<_>>();
 
         (1..=count)
-            .map(|x| (x, polynomial.clone().iter()
-                .fold(secret.clone(), |akk, (index, val)|
-                    akk + val.clone() * BigUint::from_usize(pow(x, *index)).unwrap().into())))
+            .map(|x| {
+                (
+                    x,
+                    polynomial
+                        .clone()
+                        .iter()
+                        .fold(secret.clone(), |akk, (index, val)| {
+                            akk + val.clone() * BigUint::from_usize(pow(x, *index)).unwrap().into()
+                        }),
+                )
+            })
             .collect()
     }
 
@@ -94,16 +124,22 @@ impl<T, P> ThresholdSecretSharingScheme<T, (usize, T)> for P
     /// Given that `threshold` matches the threshold at generation and enough shares are present, it will return an
     /// instance of `T` that is reconstructed from the shares
     fn reconstruct_secret(shares: &[(usize, T)], threshold: usize) -> T {
-        shares.iter()
+        shares
+            .iter()
             .take(threshold)
-            .map(|(i, share)|
-                share.clone().mul(shares.iter()
-                    .filter(|(j, _)| *i != *j)
-                    .map(|(j, _)| {
-                        T::from_isize(-(*j as isize)).unwrap().mul(T::from_isize(*i as isize - *j as isize).unwrap()
-                            .inverse())
-                    })
-                    .product()))
+            .map(|(i, share)| {
+                share.clone().mul(
+                    shares
+                        .iter()
+                        .filter(|(j, _)| *i != *j)
+                        .map(|(j, _)| {
+                            T::from_isize(-(*j as isize))
+                                .unwrap()
+                                .mul(T::from_isize(*i as isize - *j as isize).unwrap().inverse())
+                        })
+                        .product(),
+                )
+            })
             .sum()
     }
 }
@@ -130,23 +166,42 @@ mod tests {
 
     #[test]
     fn test_reconstruction() {
-        let shares = ExampleProtocol::generate_shares(&mut thread_rng(),
-                                                      &Mersenne89::from_usize(20).unwrap(), 5, 5);
-        assert_eq!(ExampleProtocol::reconstruct_secret(&shares, 5), Mersenne89::from_usize(20).unwrap());
+        let shares = ExampleProtocol::generate_shares(
+            &mut thread_rng(),
+            &Mersenne89::from_usize(20).unwrap(),
+            5,
+            5,
+        );
+        assert_eq!(
+            ExampleProtocol::reconstruct_secret(&shares, 5),
+            Mersenne89::from_usize(20).unwrap()
+        );
     }
 
     #[test]
     fn test_linearity() {
-        let shares = ExampleProtocol::generate_shares(&mut thread_rng(),
-                                                      &Mersenne89::from_usize(20).unwrap(), 2, 2);
-        let shares_2 = ExampleProtocol::generate_shares(&mut thread_rng(),
-                                                        &Mersenne89::from_usize(40).unwrap(), 2, 2);
+        let shares = ExampleProtocol::generate_shares(
+            &mut thread_rng(),
+            &Mersenne89::from_usize(20).unwrap(),
+            2,
+            2,
+        );
+        let shares_2 = ExampleProtocol::generate_shares(
+            &mut thread_rng(),
+            &Mersenne89::from_usize(40).unwrap(),
+            2,
+            2,
+        );
 
-        let addition: Vec<_> = shares.into_iter()
+        let addition: Vec<_> = shares
+            .into_iter()
             .zip(shares_2)
             .map(|((x1, y1), (_, y2))| (x1, y1 + y2))
             .collect();
 
-        assert_eq!(ExampleProtocol::reconstruct_secret(&addition, 2), Mersenne89::from_usize(60).unwrap());
+        assert_eq!(
+            ExampleProtocol::reconstruct_secret(&addition, 2),
+            Mersenne89::from_usize(60).unwrap()
+        );
     }
 }

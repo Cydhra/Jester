@@ -8,8 +8,8 @@ use std::pin::Pin;
 
 use rand::{CryptoRng, RngCore};
 
-pub mod shamir_secret_sharing;
 pub mod beaver_randomization_multiplication;
+pub mod shamir_secret_sharing;
 
 pub mod protocols;
 
@@ -31,7 +31,8 @@ pub trait ThresholdSecretSharingScheme<T, S> {
     /// #Output
     /// Returns a vector of `count` shares
     fn generate_shares<R>(rng: &mut R, secret: &T, count: usize, threshold: usize) -> Vec<S>
-        where R: RngCore + CryptoRng;
+    where
+        R: RngCore + CryptoRng;
 
     /// Take a vector of shares and reconstruct the secret from them. At least `threshold` shares must be present,
     /// otherwise the secret cannot be reconstructed
@@ -79,7 +80,7 @@ pub trait CliqueCommunicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> {
     ///
     /// #Output
     /// Returns a future on the reconstructed secret
-    fn reveal_shares(&mut self, share: S) -> Pin<Box<dyn Future<Output=T> + Send>>;
+    fn reveal_shares(&mut self, share: S) -> Pin<Box<dyn Future<Output = T> + Send>>;
 
     /// A secret is created with exactly `N` shares and one is sent to each participant. Shares of other participants
     /// are collected and returned.
@@ -89,17 +90,20 @@ pub trait CliqueCommunicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> {
     ///
     /// #Output
     /// Returns a future on the shares that other participants sent in return
-    fn distribute_secret(&mut self, secret: T) -> Pin<Box<dyn Future<Output=Vec<S>> + Send>>;
+    fn distribute_secret(&mut self, secret: T) -> Pin<Box<dyn Future<Output = Vec<S>> + Send>>;
 }
 
 /// A multiplication scheme. This multiplication scheme is potentially very complex and requires at least one round
 /// of communication which in turn requires it to capture a mutable reference to protocol it is defined on. This in
 /// turn makes it impossible to parallelize the multiplication. However, there is an extension to this scheme
 /// (`ParallelMultiplicationScheme`) which takes multiple parameters and performs all multiplications in parallel.
-pub trait MultiplicationScheme<T, S>: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> {
+pub trait MultiplicationScheme<T, S>:
+    ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S>
+{
     /// Multiply two shares `lhs * rhs` asynchronously. This method cannot be used in parallel, because it moves the
     /// mutable reference to `self` into the future returned.
-    fn multiply<'a>(&'a mut self, lhs: &S, rhs: &S) -> Pin<Box<dyn Future<Output=S> + Send + 'a>>;
+    fn multiply<'a>(&'a mut self, lhs: &S, rhs: &S)
+        -> Pin<Box<dyn Future<Output = S> + Send + 'a>>;
 }
 
 /// An extension to `MultiplicationScheme` that overcomes its limitation by simply taking multiple pairs of shares
@@ -108,5 +112,8 @@ pub trait ParallelMultiplicationScheme<T, S>: MultiplicationScheme<T, S> {
     /// Multiply a set of pairs of shares in parallel. This method cannot be called in parallel, which is why it
     /// takes a slice of pairs as argument. Simply call this method once with all pairs of values that are to be
     /// multiplied.
-    fn parallel_multiply<'a>(&'a mut self, pairs: &[(S, S)]) -> Pin<Box<dyn Future<Output=Vec<S>> + Send + 'a>>;
+    fn parallel_multiply<'a>(
+        &'a mut self,
+        pairs: &[(S, S)],
+    ) -> Pin<Box<dyn Future<Output = Vec<S>> + Send + 'a>>;
 }
