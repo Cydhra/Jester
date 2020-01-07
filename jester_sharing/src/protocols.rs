@@ -165,12 +165,11 @@ where
         .map(|e| protocol.reveal_shares(e));
     let revealed_elements = join_all(revealed_elements).await;
 
-    let inverses = revealed_elements
+    revealed_elements
         .into_iter()
         .zip(helpers)
         .map(|(hidden_element, helper)| P::multiply_scalar(&helper, &hidden_element.inverse()))
-        .collect();
-    inverses
+        .collect()
 }
 
 /// A function generating the upper triangular matrix U that is defined by V = U * L, where V is the inverted
