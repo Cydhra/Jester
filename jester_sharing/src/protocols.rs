@@ -1,12 +1,11 @@
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
 use futures::lock::Mutex;
 use futures::{future::join_all, join};
-use num::{FromPrimitive, One};
+use num::FromPrimitive;
 use num_bigint::BigUint;
 use rand::{CryptoRng, RngCore};
 
@@ -65,11 +64,11 @@ fn joint_random_non_zero_number_sharing<R, T, S, P>(
     rng: &mut R,
     protocol: &mut P,
 ) -> impl Future<Output = S>
-    where
-        R: RngCore + CryptoRng,
-        T: PrimeField,
-        S: 'static,
-        P: ThresholdSecretSharingScheme<T, S>
+where
+    R: RngCore + CryptoRng,
+    T: PrimeField,
+    S: 'static,
+    P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>,
 {
@@ -180,8 +179,13 @@ where
 /// # Parameters
 /// - `row` row of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
 /// - `column` column of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
-fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn Future<Output=T> + Sync + Send>>
-    where T: PrimeField + Send + Sync + 'static {
+fn get_inverted_vandermonde_upper<T>(
+    row: isize,
+    column: isize,
+) -> Pin<Box<dyn Future<Output = T> + Sync + Send>>
+where
+    T: PrimeField + Send + Sync + 'static,
+{
     Box::pin(async move {
         // a wrapper struct wrapping a marker used as a key in a typemap
         struct TypeKey<T: 'static>(PhantomData<T>);
@@ -198,7 +202,8 @@ fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn F
 
         if let Some(v) = mutex_guard
             .get::<TypeKey<T>>()
-            .and_then(|matrix| matrix.get(&(row, column))) {
+            .and_then(|matrix| matrix.get(&(row, column)))
+        {
             v.clone()
         } else {
             drop(mutex_guard);
@@ -211,10 +216,12 @@ fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn F
                 assert!(column >= 0);
                 assert!(row >= 0);
 
-                let x = (BigUint::from_isize(column).unwrap() + BigUint::one()).into();
+                let x = BigUint::from_isize(column).unwrap().into();
 
-                let (a, b) = join!(get_inverted_vandermonde_upper::<T>(row - 1, column - 1),
-                get_inverted_vandermonde_upper::<T>(row, column - 1));
+                let (a, b) = join!(
+                    get_inverted_vandermonde_upper::<T>(row - 1, column - 1),
+                    get_inverted_vandermonde_upper::<T>(row, column - 1)
+                );
 
                 a - b * x
             };
@@ -236,7 +243,9 @@ fn get_inverted_vandermonde_upper<T>(row: isize, column: isize) -> Pin<Box<dyn F
 /// - `row` row of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
 /// - `column` column of requested entry. Starts at zero. Negative entries might lead to undefined behaviour.
 async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
-    where T: PrimeField + Send + Sync + 'static {
+where
+    T: PrimeField + Send + Sync + 'static,
+{
     // use a wrapper to a marker type that can be used as a key to the typemap
     struct TypeKey<T: 'static>(PhantomData<T>);
     impl<T: 'static> typemap::Key for TypeKey<T> {
@@ -252,7 +261,8 @@ async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
 
     if let Some(v) = mutex_guard
         .get::<TypeKey<T>>()
-        .and_then(|matrix| matrix.get(&(row, column))) {
+        .and_then(|matrix| matrix.get(&(row, column)))
+    {
         v.clone()
     } else {
         let v = if row < column {
@@ -283,14 +293,18 @@ async fn get_inverted_vandermonde_lower<T>(row: isize, column: isize) -> T
 /// - `matrix_size` size of the square vandermonde matrix. Depends on the amount of sample points that this matrix
 /// transforms.
 async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_size: usize) -> T
-    where T: PrimeField + Sync + Send + 'static {
+where
+    T: PrimeField + Sync + Send + 'static,
+{
     assert!(matrix_size > 0);
 
     let mut acc = T::zero();
 
     for index in 0..matrix_size {
-        let (u, l) = join!(get_inverted_vandermonde_upper::<T>(row, index as isize),
-                                get_inverted_vandermonde_lower::<T>(index as isize, column));
+        let (u, l) = join!(
+            get_inverted_vandermonde_upper::<T>(row, index as isize),
+            get_inverted_vandermonde_lower::<T>(index as isize, column)
+        );
         acc = acc + u * l;
     }
 
@@ -298,11 +312,15 @@ async fn get_inverted_vandermonde_entry<T>(row: isize, column: isize, matrix_siz
 }
 
 pub async fn joint_unbounded_or<R, T, S, P>(rng: &mut R, protocol: &mut P, bits: &[S]) -> S
-    where R: RngCore + CryptoRng,
-          T: PrimeField + Send + Sync + 'static,
-          S: Clone + 'static,
-          P: ThresholdSecretSharingScheme<T, S> + LinearSharingScheme<T, S> + CliqueCommunicationScheme<T, S> +
-          ParallelMultiplicationScheme<T, S> {
+where
+    R: RngCore + CryptoRng,
+    T: PrimeField + Send + Sync + 'static,
+    S: Clone + 'static,
+    P: ThresholdSecretSharingScheme<T, S>
+        + LinearSharingScheme<T, S>
+        + CliqueCommunicationScheme<T, S>
+        + ParallelMultiplicationScheme<T, S>,
+{
     assert!(!bits.is_empty());
 
     // compute a polynomial share of the sum of all `l` bits plus one.
@@ -317,21 +335,21 @@ pub async fn joint_unbounded_or<R, T, S, P>(rng: &mut R, protocol: &mut P, bits:
         .map(|a| if a == 1 { 0_usize } else { 1_usize })
         .collect();
 
-    let monomial_coefficients: Vec<T> = join_all((0..=degree)
-        .map(|i| {
-            let iter_clone = lagrange_coefficients.iter();
-            async move {
-                join_all(iter_clone
-                    .enumerate()
-                    .map(|(j, c)| async move {
-                        get_inverted_vandermonde_entry::<T>(i as isize, j as isize, degree + 1).await
-                            * BigUint::from(*c).into()
-                    }))
-                    .await
-                    .into_iter()
-                    .sum()
-            }
-        })).await;
+    let monomial_coefficients: Vec<T> = join_all((0..=degree).map(|i| {
+        let iter_clone = lagrange_coefficients.iter();
+        async move {
+            join_all(iter_clone.enumerate().map(|(j, c)| {
+                async move {
+                    get_inverted_vandermonde_entry::<T>(i as isize, j as isize, degree + 1).await
+                        * BigUint::from(*c).into()
+                }
+            }))
+            .await
+            .into_iter()
+            .sum()
+        }
+    }))
+    .await;
 
     // generate `l` helper used for an unbounded multiplication. Those helpers will be inverted using an
     // unbounded inversion and then multiplied with the elements that are used in the unbounded multiplication such
@@ -341,7 +359,7 @@ pub async fn joint_unbounded_or<R, T, S, P>(rng: &mut R, protocol: &mut P, bits:
     // multiplying their share of that helper. This way, all parties obtain a share of the unbounded multiplication
     // result, but cannot learn the reconstructed result without learning the reconstructed last helper.
     let helpers: Vec<_> = (1..=degree)
-        .map(|_| joint_random_number_sharing(rng, protocol))
+        .map(|_| joint_random_non_zero_number_sharing(rng, protocol))
         .collect();
     let helpers = join_all(helpers).await;
 
@@ -350,37 +368,53 @@ pub async fn joint_unbounded_or<R, T, S, P>(rng: &mut R, protocol: &mut P, bits:
     // multiply the `i`'th inverted helper (except the first one) with the `(i - 1)'th` helper
     let mut cancellation_factors = vec![];
     cancellation_factors.push(inverted_helpers[0].clone());
-    cancellation_factors.append(&mut protocol.parallel_multiply(
-        &helpers[..degree - 1]
-            .iter()
-            .cloned()
-            .zip(inverted_helpers[1..].iter().cloned())
-            .collect::<Vec<_>>()).await);
+    cancellation_factors.append(
+        &mut protocol
+            .parallel_multiply(
+                &helpers[..degree - 1]
+                    .iter()
+                    .cloned()
+                    .zip(inverted_helpers[1..].iter().cloned())
+                    .collect::<Vec<_>>(),
+            )
+            .await,
+    );
 
     // unbounded multiplication keeping all factors
-    let factors = protocol.parallel_multiply(
-        &cancellation_factors.into_iter()
-            .map(|f| (sum.clone(), f))
-            .collect::<Vec<_>>()
-    ).await;
+    let factors = protocol
+        .parallel_multiply(
+            &cancellation_factors
+                .into_iter()
+                .map(|f| (sum.clone(), f))
+                .collect::<Vec<_>>(),
+        )
+        .await;
 
     // reveal factors
-    let revealed_factors: Vec<_> = factors.iter().map(|c| protocol.reveal_shares(c.clone())).collect();
+    let revealed_factors: Vec<_> = factors
+        .iter()
+        .map(|c| protocol.reveal_shares(c.clone()))
+        .collect();
     let revealed_factors = join_all(revealed_factors).await;
 
     // calculate all powers of `sum` between `1` and `degree` and add their respective monomials
     let powers_for_polynomial: Vec<_> = (1..=degree)
-        .map(|power|
+        .map(|power| {
             P::multiply_scalar(
-                &P::multiply_scalar(&helpers[power - 1], &revealed_factors[..power].iter().cloned().product()),
-                &monomial_coefficients[power]))
+                &P::multiply_scalar(
+                    &helpers[power - 1],
+                    &revealed_factors[..power].iter().cloned().product(),
+                ),
+                &monomial_coefficients[power],
+            )
+        })
         .collect();
 
     // add the constant monomial coefficient to the polynomial and sum it up
-    powers_for_polynomial[1..]
-        .iter()
-        .fold(P::add_scalar(&powers_for_polynomial[0], &monomial_coefficients[0]), |acc, monomial|
-            P::add_shares(&acc, monomial))
+    powers_for_polynomial[1..].iter().fold(
+        P::add_scalar(&powers_for_polynomial[0], &monomial_coefficients[0]),
+        |acc, monomial| P::add_shares(&acc, monomial),
+    )
 }
 
 #[cfg(test)]
@@ -399,14 +433,14 @@ mod tests {
     use jester_maths::prime_fields;
 
     use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
-    use crate::CliqueCommunicationScheme;
     use crate::protocols::{joint_unbounded_inversion, joint_unbounded_or};
     use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
+    use crate::CliqueCommunicationScheme;
 
     prime_fields!(TestPrimeField("7", 10));
 
     /// A testing protocol that is carried out between two participants that do not randomize their inputs and do no
-                        /// communicate as all values are deterministic anyways.
+    /// communicate as all values are deterministic anyways.
     struct TestProtocol {
         participant_id: usize,
     }
@@ -416,21 +450,22 @@ mod tests {
     /// All shares are considered to be carried out on polynomials where all coefficients are zero. Thus
     /// communication is unnecessary and the secret is always the share
     impl CliqueCommunicationScheme<TestPrimeField, (usize, TestPrimeField)> for TestProtocol
-        where TestProtocol: ShamirSecretSharingScheme<TestPrimeField> {
-        fn reveal_shares(&mut self, share: (usize, TestPrimeField)) -> Pin<Box<dyn Future<Output=TestPrimeField> + Send>> {
-            Box::pin(
-                async move {
-                    share.1
-                }
-            )
+    where
+        TestProtocol: ShamirSecretSharingScheme<TestPrimeField>,
+    {
+        fn reveal_shares(
+            &mut self,
+            share: (usize, TestPrimeField),
+        ) -> Pin<Box<dyn Future<Output = TestPrimeField> + Send>> {
+            Box::pin(async move { share.1 })
         }
 
-        fn distribute_secret(&mut self, secret: TestPrimeField)
-                             -> Pin<Box<dyn Future<Output=Vec<(usize, TestPrimeField)>> + Send>> {
+        fn distribute_secret(
+            &mut self,
+            secret: TestPrimeField,
+        ) -> Pin<Box<dyn Future<Output = Vec<(usize, TestPrimeField)>> + Send>> {
             let id = self.participant_id;
-            Box::pin(async move {
-                vec![(id, secret.clone()), (id, secret)]
-            })
+            Box::pin(async move { vec![(id, secret.clone()), (id, secret)] })
         }
     }
 
@@ -472,29 +507,48 @@ mod tests {
         let mut rng = thread_rng();
 
         block_on(async {
-            //                let shares = protocol.distribute_secret(TestPrimeField::one() + TestPrimeField::one()).await;
-            //                let inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &shares).await;
-            //                let doubly_inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &inverse).await;
-            //                let revealed = protocol.reveal_shares(doubly_inverse[0].clone()).await;
-            //
-            //                assert_eq!(TestPrimeField::one() + TestPrimeField::one(), revealed);
+            let shares = protocol
+                .distribute_secret(TestPrimeField::one() + TestPrimeField::one())
+                .await;
+            let inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &shares).await;
+            let doubly_inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &inverse).await;
+            let revealed = protocol.reveal_shares(doubly_inverse[0].clone()).await;
+
+            assert_eq!(TestPrimeField::one() + TestPrimeField::one(), revealed);
         })
     }
 
     #[test]
-    fn test_unbounded_or() {
+    fn test_unbounded_or_one() {
         let mut protocol = TestProtocol { participant_id: 1 };
 
         block_on(async {
             let bits = vec![
                 (1, TestPrimeField::one()),
-                (1, TestPrimeField::one()),
                 (1, TestPrimeField::zero()),
+                (1, TestPrimeField::one()),
             ];
 
             let or = joint_unbounded_or(&mut thread_rng(), &mut protocol, &bits).await;
             let revealed = protocol.reveal_shares(or).await;
             assert_eq!(revealed, TestPrimeField::one());
+        })
+    }
+
+    #[test]
+    fn test_unbounded_or_zero() {
+        let mut protocol = TestProtocol { participant_id: 1 };
+
+        block_on(async {
+            let bits = vec![
+                (1, TestPrimeField::zero()),
+                (1, TestPrimeField::zero()),
+                (1, TestPrimeField::zero()),
+            ];
+
+            let or = joint_unbounded_or(&mut thread_rng(), &mut protocol, &bits).await;
+            let revealed = protocol.reveal_shares(or).await;
+            assert_eq!(revealed, TestPrimeField::zero());
         })
     }
 
