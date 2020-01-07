@@ -6,10 +6,10 @@ use std::pin::Pin;
 use futures::lock::Mutex;
 use futures::{future::join_all, join};
 use num::FromPrimitive;
-use num_bigint::BigUint;
-use rand::{CryptoRng, RngCore};
+pub use num_bigint::BigUint;
+pub use rand::{CryptoRng, RngCore};
 
-use jester_maths::prime::PrimeField;
+pub use jester_maths::prime::*;
 
 use crate::{
     CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme,

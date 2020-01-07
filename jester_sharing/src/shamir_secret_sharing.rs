@@ -76,13 +76,13 @@ where
     /// Generate a random polynomial `f` and `count` solutions `sn = f(n)` where `n != 0` as shares. The secret is
     /// the solution `secret = f(0)` of the polynomial and each share is the solution of `f(i)` where `i - 1` is the
     /// index within the returned vector.
-    /// #Parameters:
+    /// # Parameters
     /// - `rng` a cryptographically secure random number generator.
     /// - `secret` an instance of `T`
     /// - `count` how many shares to generate
     /// - `threshold` how many shares are required to reconstruct the secret
     ///
-    /// #Output
+    /// # Returns
     /// Returns a vector of `count` shares
     fn generate_shares<R>(
         rng: &mut R,
@@ -115,12 +115,12 @@ where
     }
 
     /// Interpolates the secret using the Lagrange interpolation method.
-    /// #Parameters:
+    /// # Parameters
     /// - `shares` a collection of at least `threshold` shares
     /// - `threshold` the original threshold the shares were generated upon. This may be less than the actual number
     /// of shares given, but it must be the same value as during generation
     ///
-    /// #Output:
+    /// # Returns
     /// Given that `threshold` matches the threshold at generation and enough shares are present, it will return an
     /// instance of `T` that is reconstructed from the shares
     fn reconstruct_secret(shares: &[(usize, T)], threshold: usize) -> T {
