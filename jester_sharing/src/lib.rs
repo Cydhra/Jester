@@ -5,6 +5,7 @@
 
 pub use communication::*;
 pub use multiplication::*;
+pub use random_number_generation::*;
 pub use threshold_sharing::*;
 
 pub use jester_maths::prime::PrimeField;
@@ -14,4 +15,8 @@ pub use rand::{CryptoRng, RngCore};
 pub mod communication;
 pub mod multiplication;
 pub mod protocols;
+pub mod random_number_generation;
 pub mod threshold_sharing;
+
+/// Protocol marker for delegated protocol implementations
+pub struct Delegate;
