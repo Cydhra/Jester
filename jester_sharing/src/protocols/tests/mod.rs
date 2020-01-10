@@ -7,8 +7,8 @@ use crate::{
     BigUint, CliqueCommunicationScheme, Delegate, LinearSharingScheme,
     ParallelMultiplicationScheme, PrimeField, RandomNumberGenerationScheme,
     RandomNumberGenerationSchemeDelegate, RandomNumberGenerationSchemeMarker,
-    ThresholdSecretSharingScheme, UnboundedInversionScheme,
-    UnboundedInversionSchemeDelegate, UnboundedInversionSchemeMarker,
+    ThresholdSecretSharingScheme, UnboundedInversionScheme, UnboundedInversionSchemeDelegate,
+    UnboundedInversionSchemeMarker,
 };
 
 use futures::executor::block_on;

@@ -4,6 +4,7 @@
 #![recursion_limit = "256"]
 
 pub use communication::*;
+pub use conditional_selection::*;
 pub use inversion::*;
 pub use multiplication::*;
 pub use random_number_generation::*;
@@ -14,6 +15,7 @@ pub use num_bigint::BigUint;
 pub use rand::{CryptoRng, RngCore};
 
 pub mod communication;
+pub mod conditional_selection;
 pub mod inversion;
 pub mod multiplication;
 pub mod protocols;
