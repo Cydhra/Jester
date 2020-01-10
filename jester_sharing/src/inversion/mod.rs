@@ -26,7 +26,11 @@ where
     /// - `rng` a cryptographically secure random number generator
     /// - `protocol` the primitives required for this scheme
     /// - `share` a share of the secret to invert
-    fn inverse<'a, R>(rng: &'a mut R, protocol: &'a mut P, share: &S) -> Pin<Box<dyn Future<Output = S> + 'a>>
+    fn inverse<'a, R>(
+        rng: &'a mut R,
+        protocol: &'a mut P,
+        share: &S,
+    ) -> Pin<Box<dyn Future<Output = S> + 'a>>
     where
         R: RngCore + CryptoRng;
 }

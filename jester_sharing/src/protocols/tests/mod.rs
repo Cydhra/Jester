@@ -3,10 +3,12 @@
 use super::*;
 use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
 use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
-use crate::{BigUint, PrimeField};
 use crate::{
-    CliqueCommunicationScheme, Delegate, LinearSharingScheme, RandomNumberGenerationSchemeDelegate,
-    RandomNumberGenerationSchemeMarker, ThresholdSecretSharingScheme,
+    BigUint, CliqueCommunicationScheme, Delegate, LinearSharingScheme,
+    ParallelMultiplicationScheme, PrimeField, RandomNumberGenerationScheme,
+    RandomNumberGenerationSchemeDelegate, RandomNumberGenerationSchemeMarker,
+    ThresholdSecretSharingScheme, UnboundedInversionScheme,
+    UnboundedInversionSchemeDelegate, UnboundedInversionSchemeMarker,
 };
 
 use futures::executor::block_on;
@@ -19,6 +21,7 @@ use mashup::*;
 use std::iter::repeat;
 use std::pin::Pin;
 
+use crate::inversion::unbounded_inversion::JointUnboundedInversion;
 use crate::random_number_generation::sum_non_zero_random_number_generation::SumNonZeroRandomNumberGeneration;
 use futures::Future;
 
@@ -44,6 +47,23 @@ where
     S: 'static,
 {
     type Delegate = SumNonZeroRandomNumberGeneration<T, S, P>;
+}
+
+impl UnboundedInversionSchemeMarker for TestProtocol {
+    type Marker = Delegate;
+}
+
+impl<T, S, P> UnboundedInversionSchemeDelegate<T, S, P> for TestProtocol
+where
+    P: ThresholdSecretSharingScheme<T, S>
+        + LinearSharingScheme<T, S>
+        + CliqueCommunicationScheme<T, S>
+        + ParallelMultiplicationScheme<T, S>
+        + RandomNumberGenerationScheme<T, S, P>,
+    T: PrimeField,
+    S: Clone + 'static,
+{
+    type Delegate = JointUnboundedInversion<T, S, P>;
 }
 
 impl ShamirSecretSharingScheme<TestPrimeField> for TestProtocol {}
@@ -147,7 +167,8 @@ fn test_unbounded_inversion() {
             (1, BigUint::from(4u32).into()),
             (1, BigUint::from(6u32).into()),
         ];
-        let inverses = joint_unbounded_inversion(&mut rng, &mut protocol, &elements[..]).await;
+        let inverses =
+            TestProtocol::unbounded_inverse(&mut rng, &mut protocol, &elements[..]).await;
 
         assert_eq!(inverses[0].1, TestPrimeField::from(BigUint::from(1u32)));
         assert_eq!(inverses[1].1, TestPrimeField::from(BigUint::from(2u32)));
@@ -162,8 +183,9 @@ fn test_double_inversion() {
 
     block_on(async {
         let shares = protocol.distribute_secret(BigUint::from(2u32).into()).await;
-        let inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &shares).await;
-        let doubly_inverse = joint_unbounded_inversion(&mut rng, &mut protocol, &inverse).await;
+        let inverse = TestProtocol::unbounded_inverse(&mut rng, &mut protocol, &shares).await;
+        let doubly_inverse =
+            TestProtocol::unbounded_inverse(&mut rng, &mut protocol, &inverse).await;
         let revealed = protocol.reveal_shares(doubly_inverse[0].clone()).await;
 
         assert_eq!(revealed, BigUint::from(2u32).into());

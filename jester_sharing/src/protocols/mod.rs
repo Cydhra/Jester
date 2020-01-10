@@ -3,11 +3,9 @@
 //! contract that requires implementations of all primitives necessary.
 
 pub use self::conditional_selection::*;
-pub use self::joint_unbounded_inversion::*;
 pub use self::joint_unbounded_or::*;
 
 mod conditional_selection;
-mod joint_unbounded_inversion;
 mod joint_unbounded_or;
 
 #[cfg(test)]

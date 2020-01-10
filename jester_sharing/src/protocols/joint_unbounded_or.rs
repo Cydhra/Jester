@@ -11,10 +11,8 @@ use num::FromPrimitive;
 use crate::{
     BigUint, CliqueCommunicationScheme, CryptoRng, LinearSharingScheme,
     ParallelMultiplicationScheme, PrimeField, RandomNumberGenerationScheme, RngCore,
-    ThresholdSecretSharingScheme,
+    ThresholdSecretSharingScheme, UnboundedInversionScheme,
 };
-
-use crate::protocols::joint_unbounded_inversion;
 
 /// A function generating the upper triangular matrix U that is defined by V = U * L, where V is the inverted
 /// Vandermonde matrix. The function generates the matrix recursively and caches results to be used later on.
@@ -166,7 +164,8 @@ where
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
         + ParallelMultiplicationScheme<T, S>
-        + RandomNumberGenerationScheme<T, S, P>,
+        + RandomNumberGenerationScheme<T, S, P>
+        + UnboundedInversionScheme<T, S, P>,
 {
     assert!(!bits.is_empty());
 
@@ -210,7 +209,7 @@ where
         .collect();
     let helpers = join_all(helpers).await;
 
-    let inverted_helpers = joint_unbounded_inversion(rng, protocol, &helpers).await;
+    let inverted_helpers = P::unbounded_inverse(rng, protocol, &helpers).await;
 
     // multiply the `i`'th inverted helper (except the first one) with the `(i - 1)'th` helper
     let mut cancellation_factors = vec![];
