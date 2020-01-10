@@ -19,10 +19,12 @@ pub mod communication;
 pub mod conditional_selection;
 pub mod inversion;
 pub mod multiplication;
-pub mod protocols;
 pub mod random_number_generation;
 pub mod shared_or_function;
 pub mod threshold_sharing;
 
 /// Protocol marker for delegated protocol implementations
 pub struct Delegate;
+
+#[cfg(test)]
+mod tests;

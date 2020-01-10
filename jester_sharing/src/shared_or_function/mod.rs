@@ -1,13 +1,15 @@
 use crate::{
     CliqueCommunicationScheme, CryptoRng, LinearSharingScheme, ParallelMultiplicationScheme,
     PrimeField, RandomNumberGenerationScheme, RngCore, ThresholdSecretSharingScheme,
-    UnboundedInversionScheme,
+    UnboundedInversionScheme, Delegate
 };
 use futures::Future;
 use std::pin::Pin;
+use jester_sharing_proc::delegatable_protocol;
 
 pub mod joint_unbounded_or;
 
+#[delegatable_protocol]
 pub trait OrFunctionScheme<T, S, P>
 where
     P: ThresholdSecretSharingScheme<T, S>
@@ -28,6 +30,7 @@ where
         R: RngCore + CryptoRng;
 }
 
+#[delegatable_protocol]
 pub trait UnboundedOrFunctionScheme<T, S, P>
 where
     P: ThresholdSecretSharingScheme<T, S>
