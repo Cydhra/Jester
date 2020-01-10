@@ -6,33 +6,10 @@ use futures::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 
-/// A marker struct that delegates to a non-zero random number generation scheme.
-/// # Usage
-/// ```
-/// use jester_sharing::{RandomNumberGenerationDelegate, ProtocolMarker, Delegate, ThresholdSecretSharingScheme, LinearSharingScheme, CliqueCommunicationScheme, PrimeField};
-/// use jester_sharing::random_number_generation::sum_non_zero_random_number_generation
-/// ::SumNonZeroRandomNumberGeneration;
-///
-/// struct ExampleProtocol;
-///
-/// // snip: implementations for ThresholdSecretSharingScheme, LinearSharingScheme and CliqueCommunicationScheme for
-/// // ExampleProtocol
-///
-/// impl ProtocolMarker for ExampleProtocol {
-///     type Marker = Delegate;
-/// }
-///
-/// impl<T, S, P> RandomNumberGenerationDelegate<T, S, P> for ExampleProtocol
-/// where
-///     P: ThresholdSecretSharingScheme<T, S>
-///         + LinearSharingScheme<T, S>
-///         + CliqueCommunicationScheme<T, S>,
-///     T: PrimeField,
-///     S: 'static, {
-///     type Delegate = SumNonZeroRandomNumberGeneration<T, S, P>;
-/// }
-/// ```
-pub struct SumNonZeroRandomNumberGeneration<T, S, P>
+/// A marker struct that delegates to a non-zero random number generation scheme. This does not actually guarantee
+/// that zero is not generated, it just works for test-cases with a singular participant. Therefore this protocol is
+/// not within the public API (as it does not provide any advantages). It is only used for internal test cases.
+pub(crate) struct SumNonZeroRandomNumberGeneration<T, S, P>
 where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>

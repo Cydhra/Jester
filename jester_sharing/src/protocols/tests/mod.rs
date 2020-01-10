@@ -3,8 +3,11 @@
 use super::*;
 use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
 use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
-use crate::CliqueCommunicationScheme;
 use crate::{BigUint, PrimeField};
+use crate::{
+    CliqueCommunicationScheme, Delegate, LinearSharingScheme, ProtocolMarker,
+    RandomNumberGenerationDelegate, ThresholdSecretSharingScheme,
+};
 
 use futures::executor::block_on;
 use num::traits::{One, Zero};
@@ -16,6 +19,7 @@ use mashup::*;
 use std::iter::repeat;
 use std::pin::Pin;
 
+use crate::random_number_generation::sum_non_zero_random_number_generation::SumNonZeroRandomNumberGeneration;
 use futures::Future;
 
 // Define a prime field for testing with p = 7
@@ -25,6 +29,21 @@ prime_fields!(pub(super) TestPrimeField("7", 10));
 /// communicate as all values are deterministic anyways.
 pub(super) struct TestProtocol {
     pub(super) participant_id: usize,
+}
+
+impl ProtocolMarker for TestProtocol {
+    type Marker = Delegate;
+}
+
+impl<T, S, P> RandomNumberGenerationDelegate<T, S, P> for TestProtocol
+where
+    P: ThresholdSecretSharingScheme<T, S>
+        + LinearSharingScheme<T, S>
+        + CliqueCommunicationScheme<T, S>,
+    T: PrimeField,
+    S: 'static,
+{
+    type Delegate = SumNonZeroRandomNumberGeneration<T, S, P>;
 }
 
 impl ShamirSecretSharingScheme<TestPrimeField> for TestProtocol {}

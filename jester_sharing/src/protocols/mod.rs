@@ -5,12 +5,10 @@
 pub use self::conditional_selection::*;
 pub use self::joint_unbounded_inversion::*;
 pub use self::joint_unbounded_or::*;
-pub use self::random_number_generation::*;
 
 mod conditional_selection;
 mod joint_unbounded_inversion;
 mod joint_unbounded_or;
-mod random_number_generation;
 
 #[cfg(test)]
 mod tests;

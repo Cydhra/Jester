@@ -2,10 +2,9 @@ use futures::future::join_all;
 
 use crate::{
     CliqueCommunicationScheme, LinearSharingScheme, ParallelMultiplicationScheme,
-    ThresholdSecretSharingScheme,
+    RandomNumberGenerationScheme, ThresholdSecretSharingScheme,
 };
 
-use crate::protocols::joint_random_non_zero_number_sharing;
 use crate::{CryptoRng, PrimeField, RngCore};
 
 /// A protocol inverting an unbounded amount of shares in parallel. The protocol requires two round-trip-times in a
@@ -34,11 +33,12 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>,
+        + ParallelMultiplicationScheme<T, S>
+        + RandomNumberGenerationScheme<T, S, P>,
 {
     let bound = elements.len();
     let helpers: Vec<_> = (0..bound)
-        .map(|_| joint_random_non_zero_number_sharing(rng, protocol))
+        .map(|_| P::generate_random_number_sharing(rng, protocol))
         .collect();
     let helpers = join_all(helpers).await;
 
