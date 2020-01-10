@@ -8,6 +8,7 @@ pub use conditional_selection::*;
 pub use inversion::*;
 pub use multiplication::*;
 pub use random_number_generation::*;
+pub use shared_or_function::*;
 pub use threshold_sharing::*;
 
 pub use jester_maths::prime::PrimeField;
@@ -20,6 +21,7 @@ pub mod inversion;
 pub mod multiplication;
 pub mod protocols;
 pub mod random_number_generation;
+pub mod shared_or_function;
 pub mod threshold_sharing;
 
 /// Protocol marker for delegated protocol implementations
