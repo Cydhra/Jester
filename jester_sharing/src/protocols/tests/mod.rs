@@ -5,8 +5,8 @@ use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplicatio
 use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
 use crate::{BigUint, PrimeField};
 use crate::{
-    CliqueCommunicationScheme, Delegate, LinearSharingScheme, RandomNumberGenerationSchemeMarker,
-    RandomNumberGenerationSchemeDelegate, ThresholdSecretSharingScheme,
+    CliqueCommunicationScheme, Delegate, LinearSharingScheme, RandomNumberGenerationSchemeDelegate,
+    RandomNumberGenerationSchemeMarker, ThresholdSecretSharingScheme,
 };
 
 use futures::executor::block_on;

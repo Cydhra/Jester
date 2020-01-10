@@ -2,8 +2,8 @@ use crate::{
     CliqueCommunicationScheme, CryptoRng, Delegate, LinearSharingScheme, PrimeField, RngCore,
     ThresholdSecretSharingScheme,
 };
-use jester_sharing_proc::delegatable_protocol;
 use futures::Future;
+use jester_sharing_proc::delegatable_protocol;
 use std::pin::Pin;
 
 //pub mod sum_not_zero_random_number_generation;
