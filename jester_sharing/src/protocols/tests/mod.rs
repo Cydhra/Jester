@@ -5,8 +5,8 @@ use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplicatio
 use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
 use crate::{BigUint, PrimeField};
 use crate::{
-    CliqueCommunicationScheme, Delegate, LinearSharingScheme, ProtocolMarker,
-    RandomNumberGenerationDelegate, ThresholdSecretSharingScheme,
+    CliqueCommunicationScheme, Delegate, LinearSharingScheme, RandomNumberGenerationSchemeMarker,
+    RandomNumberGenerationSchemeDelegate, ThresholdSecretSharingScheme,
 };
 
 use futures::executor::block_on;
@@ -31,11 +31,11 @@ pub(super) struct TestProtocol {
     pub(super) participant_id: usize,
 }
 
-impl ProtocolMarker for TestProtocol {
+impl RandomNumberGenerationSchemeMarker for TestProtocol {
     type Marker = Delegate;
 }
 
-impl<T, S, P> RandomNumberGenerationDelegate<T, S, P> for TestProtocol
+impl<T, S, P> RandomNumberGenerationSchemeDelegate<T, S, P> for TestProtocol
 where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
