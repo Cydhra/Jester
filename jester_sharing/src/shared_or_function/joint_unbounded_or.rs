@@ -1,7 +1,7 @@
 use crate::{
     BigUint, CliqueCommunicationScheme, CryptoRng, LinearSharingScheme, OrFunctionScheme,
-    ParallelMultiplicationScheme, PrimeField, RandomNumberGenerationScheme, RngCore,
-    ThresholdSecretSharingScheme, UnboundedInversionScheme, UnboundedOrFunctionScheme,
+    PrimeField, RandomNumberGenerationScheme, RngCore, ThresholdSecretSharingScheme,
+    UnboundedInversionScheme, UnboundedMultiplicationScheme, UnboundedOrFunctionScheme,
 };
 
 use futures::Future;
@@ -19,7 +19,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>
         + UnboundedInversionScheme<T, S, P>,
     T: PrimeField + Send + Sync + 'static,
@@ -30,7 +30,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>
         + UnboundedInversionScheme<T, S, P>,
     T: PrimeField + Send + Sync + 'static,
@@ -54,7 +54,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>
         + UnboundedInversionScheme<T, S, P>,
     T: PrimeField + Send + Sync + 'static,
@@ -120,7 +120,7 @@ where
             cancellation_factors.push(inverted_helpers[0].clone());
             cancellation_factors.append(
                 &mut protocol
-                    .parallel_multiply(
+                    .unbounded_multiply(
                         &helpers[..degree - 1]
                             .iter()
                             .cloned()
@@ -132,7 +132,7 @@ where
 
             // unbounded multiplication keeping all factors
             let factors = protocol
-                .parallel_multiply(
+                .unbounded_multiply(
                     &cancellation_factors
                         .into_iter()
                         .map(|f| (sum.clone(), f))

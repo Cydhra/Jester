@@ -1,7 +1,7 @@
 use futures::future::join_all;
 
 use crate::{
-    CliqueCommunicationScheme, InversionScheme, LinearSharingScheme, ParallelMultiplicationScheme,
+    CliqueCommunicationScheme, InversionScheme, LinearSharingScheme, UnboundedMultiplicationScheme,
     RandomNumberGenerationScheme, ThresholdSecretSharingScheme, UnboundedInversionScheme,
 };
 
@@ -19,7 +19,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>,
     T: PrimeField,
     S: Clone + 'static,
@@ -34,7 +34,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>
         + Send,
     T: PrimeField,
@@ -61,7 +61,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>,
     T: PrimeField,
     S: Clone + 'static,
@@ -84,7 +84,7 @@ where
             let helpers = join_all(helpers).await;
 
             let rerandomized_elements = protocol
-                .parallel_multiply(
+                .unbounded_multiply(
                     &shares_iter
                         .into_iter()
                         .zip(helpers.clone())

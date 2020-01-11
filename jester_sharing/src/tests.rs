@@ -3,11 +3,11 @@
 use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
 use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
 use crate::{
-    BigUint, CliqueCommunicationScheme, Delegate, LinearSharingScheme,
-    ParallelMultiplicationScheme, PrimeField, RandomNumberGenerationScheme,
-    RandomNumberGenerationSchemeDelegate, RandomNumberGenerationSchemeMarker,
-    ThresholdSecretSharingScheme, UnboundedInversionScheme, UnboundedInversionSchemeDelegate,
-    UnboundedInversionSchemeMarker, UnboundedOrFunctionScheme, UnboundedOrFunctionSchemeDelegate,
+    BigUint, CliqueCommunicationScheme, Delegate, LinearSharingScheme, PrimeField,
+    RandomNumberGenerationScheme, RandomNumberGenerationSchemeDelegate,
+    RandomNumberGenerationSchemeMarker, ThresholdSecretSharingScheme, UnboundedInversionScheme,
+    UnboundedInversionSchemeDelegate, UnboundedInversionSchemeMarker,
+    UnboundedMultiplicationScheme, UnboundedOrFunctionScheme, UnboundedOrFunctionSchemeDelegate,
     UnboundedOrFunctionSchemeMarker,
 };
 
@@ -59,7 +59,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>,
     T: PrimeField,
     S: Clone + 'static,
@@ -76,7 +76,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>
         + UnboundedInversionScheme<T, S, P>,
     T: PrimeField + Send + Sync + 'static,

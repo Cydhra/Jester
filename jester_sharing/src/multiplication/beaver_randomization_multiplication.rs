@@ -7,14 +7,14 @@ use jester_maths::prime::PrimeField;
 
 use crate::{
     CliqueCommunicationScheme, LinearSharingScheme, MultiplicationScheme,
-    ParallelMultiplicationScheme, ThresholdSecretSharingScheme,
+    ThresholdSecretSharingScheme, UnboundedMultiplicationScheme,
 };
 
 type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// A trait marking a special instance of a parallel two-stage multiplication scheme using Donald Beaver's
 /// rerandomization technique.
-pub trait BeaverRandomizationMultiplication<T, S>: ParallelMultiplicationScheme<T, S>
+pub trait BeaverRandomizationMultiplication<T, S>: UnboundedMultiplicationScheme<T, S>
 where
     T: PrimeField,
     Self: ThresholdSecretSharingScheme<T, S>,
@@ -27,7 +27,7 @@ where
     fn obtain_beaver_triples<'a>(&'a mut self, count: usize) -> BoxFuture<'a, Vec<(S, S, S)>>;
 }
 
-impl<P, T, S> ParallelMultiplicationScheme<T, S> for P
+impl<P, T, S> UnboundedMultiplicationScheme<T, S> for P
 where
     T: PrimeField + Send + 'static,
     S: Clone + Send + Sync + 'static,
@@ -38,7 +38,7 @@ where
         + MultiplicationScheme<T, S>
         + Send,
 {
-    fn parallel_multiply<'a>(
+    fn unbounded_multiply<'a>(
         &'a mut self,
         pairs: &[(S, S)],
     ) -> Pin<Box<dyn Future<Output = Vec<S>> + Send + 'a>> {

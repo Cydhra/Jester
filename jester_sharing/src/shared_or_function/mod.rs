@@ -1,7 +1,7 @@
 use crate::{
-    CliqueCommunicationScheme, CryptoRng, Delegate, LinearSharingScheme,
-    ParallelMultiplicationScheme, PrimeField, RandomNumberGenerationScheme, RngCore,
-    ThresholdSecretSharingScheme, UnboundedInversionScheme,
+    CliqueCommunicationScheme, CryptoRng, Delegate, LinearSharingScheme, PrimeField,
+    RandomNumberGenerationScheme, RngCore, ThresholdSecretSharingScheme, UnboundedInversionScheme,
+    UnboundedMultiplicationScheme,
 };
 use futures::Future;
 use jester_sharing_proc::delegatable_protocol;
@@ -15,7 +15,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>
         + UnboundedInversionScheme<T, S, P>,
     T: PrimeField + Send + Sync + 'static,
@@ -36,7 +36,7 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + ParallelMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S>
         + RandomNumberGenerationScheme<T, S, P>
         + UnboundedInversionScheme<T, S, P>,
     T: PrimeField + Send + Sync + 'static,
