@@ -56,7 +56,7 @@ where
     fn generate_random_number_sharing<R>(
         rng: &mut R,
         protocol: &mut P,
-    ) -> Pin<Box<dyn Future<Output = S>>>
+    ) -> Pin<Box<dyn Future<Output = S> + Send>>
     where
         R: RngCore + CryptoRng,
     {
