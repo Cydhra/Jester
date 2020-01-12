@@ -1,14 +1,15 @@
 //! This module contains unit tests for the sharing protocols. It is within an extra file to increase readability.
 
-use crate::beaver_randomization_multiplication::BeaverRandomizationMultiplication;
+use crate::beaver_randomization_multiplication::BeaverCommunicationScheme;
 use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
 use crate::{
     BigUint, CliqueCommunicationScheme, Delegate, LinearSharingScheme, PrimeField,
     RandomNumberGenerationScheme, RandomNumberGenerationSchemeDelegate,
     RandomNumberGenerationSchemeMarker, ThresholdSecretSharingScheme, UnboundedInversionScheme,
     UnboundedInversionSchemeDelegate, UnboundedInversionSchemeMarker,
-    UnboundedMultiplicationScheme, UnboundedOrFunctionScheme, UnboundedOrFunctionSchemeDelegate,
-    UnboundedOrFunctionSchemeMarker,
+    UnboundedOrFunctionScheme, UnboundedOrFunctionSchemeDelegate,
+    UnboundedOrFunctionSchemeMarker, UnboundedMultiplicationScheme, UnboundedMultiplicationSchemeDelegate,
+    UnboundedMultiplicationSchemeMarker
 };
 
 use futures::executor::block_on;
@@ -22,6 +23,7 @@ use std::iter::repeat;
 use std::pin::Pin;
 
 use crate::inversion::unbounded_inversion::JointUnboundedInversion;
+use crate::multiplication::beaver_randomization_multiplication::BeaverRerandomizationMultiplication;
 use crate::random_number_generation::sum_non_zero_random_number_generation::SumNonZeroRandomNumberGeneration;
 use crate::shared_or_function::joint_unbounded_or::JointUnboundedOrFunction;
 use futures::Future;
@@ -33,6 +35,10 @@ prime_fields!(pub(super) TestPrimeField("7", 10));
 /// communicate as all values are deterministic anyways.
 pub(super) struct TestProtocol {
     pub(super) participant_id: usize,
+}
+
+impl ShamirSecretSharingScheme<TestPrimeField> for TestProtocol {
+
 }
 
 impl RandomNumberGenerationSchemeMarker for TestProtocol {
@@ -59,10 +65,12 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
-        + RandomNumberGenerationScheme<T, S, P>,
-    T: PrimeField,
-    S: Clone + 'static,
+        + UnboundedMultiplicationScheme<T, S, P>
+        + RandomNumberGenerationScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField,
+    S: Send + Sync + Clone + 'static,
 {
     type Delegate = JointUnboundedInversion<T, S, P>;
 }
@@ -76,16 +84,16 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S, P>
         + RandomNumberGenerationScheme<T, S, P>
-        + UnboundedInversionScheme<T, S, P>,
-    T: PrimeField + Send + Sync + 'static,
-    S: Clone + 'static,
+        + UnboundedInversionScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField + 'static,
+    S: Send + Sync + Clone + 'static,
 {
     type Delegate = JointUnboundedOrFunction<T, S, P>;
 }
-
-impl ShamirSecretSharingScheme<TestPrimeField> for TestProtocol {}
 
 /// All shares are considered to be carried out on polynomials where all coefficients are zero. Thus
 /// communication is unnecessary and the secret is always the share
@@ -109,7 +117,7 @@ where
     }
 }
 
-impl BeaverRandomizationMultiplication<TestPrimeField, (usize, TestPrimeField)> for TestProtocol {
+impl BeaverCommunicationScheme<(usize, TestPrimeField)> for TestProtocol {
     fn get_reconstruction_threshold(&self) -> usize {
         2
     }
@@ -139,6 +147,24 @@ impl BeaverRandomizationMultiplication<TestPrimeField, (usize, TestPrimeField)> 
             .collect()
         })
     }
+}
+
+impl<T, S, P> UnboundedMultiplicationSchemeDelegate<T, S, P> for TestProtocol
+where
+    P: ThresholdSecretSharingScheme<T, S>
+        + LinearSharingScheme<T, S>
+        + CliqueCommunicationScheme<T, S>
+        + BeaverCommunicationScheme<S>
+        + Send
+        + Sync,
+    T: PrimeField + Send + Sync,
+    S: Send + Sync + Clone + 'static,
+{
+    type Delegate = BeaverRerandomizationMultiplication<T, S, P>;
+}
+
+impl UnboundedMultiplicationSchemeMarker for TestProtocol {
+    type Marker = Delegate;
 }
 
 #[test]

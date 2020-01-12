@@ -9,7 +9,8 @@ use std::pin::Pin;
 /// A marker struct that delegates to a default random number generation scheme.
 /// # Usage
 /// ```
-/// use jester_sharing::{RandomNumberGenerationDelegate, ProtocolMarker, Delegate, ThresholdSecretSharingScheme, LinearSharingScheme, CliqueCommunicationScheme, PrimeField};
+/// use jester_sharing::{RandomNumberGenerationSchemeDelegate, RandomNumberGenerationSchemeMarker, Delegate,
+/// ThresholdSecretSharingScheme, LinearSharingScheme, CliqueCommunicationScheme, PrimeField};
 /// use jester_sharing::random_number_generation::sum_random_number_generation::SumRandomNumberGeneration;
 ///
 /// struct ExampleProtocol;
@@ -17,11 +18,11 @@ use std::pin::Pin;
 /// // snip: implementations for ThresholdSecretSharingScheme, LinearSharingScheme and CliqueCommunicationScheme for
 /// // ExampleProtocol
 ///
-/// impl ProtocolMarker for ExampleProtocol {
+/// impl RandomNumberGenerationSchemeMarker for ExampleProtocol {
 ///     type Marker = Delegate;
 /// }
 ///
-/// impl<T, S, P> RandomNumberGenerationDelegate<T, S, P> for ExampleProtocol
+/// impl<T, S, P> RandomNumberGenerationSchemeDelegate<T, S, P> for ExampleProtocol
 /// where
 ///     P: ThresholdSecretSharingScheme<T, S>
 ///         + LinearSharingScheme<T, S>

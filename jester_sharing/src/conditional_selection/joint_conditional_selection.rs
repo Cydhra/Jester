@@ -11,18 +11,22 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + MultiplicationScheme<T, S>,
-    T: PrimeField,
-    S: Clone + 'static;
+        + MultiplicationScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField,
+    S: Send + Sync + Clone + 'static;
 
 impl<T, S, P> ConditionalSelectionScheme<T, S, P> for JointConditionalSelection<T, S, P>
 where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + MultiplicationScheme<T, S>,
-    T: PrimeField,
-    S: Clone + 'static,
+        + MultiplicationScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField,
+    S: Send + Sync + Clone + 'static,
 {
     fn joint_conditional_selection<'a>(
         protocol: &'a mut P,
@@ -35,7 +39,7 @@ where
         let condition = condition.clone();
 
         Box::pin(async move {
-            let product = protocol.multiply(&condition, &operands_difference).await;
+            let product = P::multiply(protocol, &condition, &operands_difference).await;
             P::add_shares(&product, &rhs)
         })
     }

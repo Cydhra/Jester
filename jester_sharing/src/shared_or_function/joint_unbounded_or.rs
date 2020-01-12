@@ -19,22 +19,26 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S, P>
         + RandomNumberGenerationScheme<T, S, P>
-        + UnboundedInversionScheme<T, S, P>,
-    T: PrimeField + Send + Sync + 'static,
-    S: Clone + 'static;
+        + UnboundedInversionScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField,
+    S: Send + Sync + Clone + 'static;
 
 impl<T, S, P> OrFunctionScheme<T, S, P> for JointUnboundedOrFunction<T, S, P>
 where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S, P>
         + RandomNumberGenerationScheme<T, S, P>
-        + UnboundedInversionScheme<T, S, P>,
-    T: PrimeField + Send + Sync + 'static,
-    S: Clone + 'static,
+        + UnboundedInversionScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField + 'static,
+    S: Send + Sync + Clone + 'static,
 {
     fn shared_or<'a, R>(
         rng: &'a mut R,
@@ -54,11 +58,13 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S, P>
         + RandomNumberGenerationScheme<T, S, P>
-        + UnboundedInversionScheme<T, S, P>,
-    T: PrimeField + Send + Sync + 'static,
-    S: Clone + 'static,
+        + UnboundedInversionScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField + 'static,
+    S: Send + Sync + Clone + 'static,
 {
     fn unbounded_shared_or<'a, R>(
         rng: &'a mut R,
@@ -119,26 +125,26 @@ where
             let mut cancellation_factors = vec![];
             cancellation_factors.push(inverted_helpers[0].clone());
             cancellation_factors.append(
-                &mut protocol
-                    .unbounded_multiply(
-                        &helpers[..degree - 1]
-                            .iter()
-                            .cloned()
-                            .zip(inverted_helpers[1..].iter().cloned())
-                            .collect::<Vec<_>>(),
-                    )
-                    .await,
+                &mut P::unbounded_multiply(
+                    protocol,
+                    &helpers[..degree - 1]
+                        .iter()
+                        .cloned()
+                        .zip(inverted_helpers[1..].iter().cloned())
+                        .collect::<Vec<_>>(),
+                )
+                .await,
             );
 
             // unbounded multiplication keeping all factors
-            let factors = protocol
-                .unbounded_multiply(
-                    &cancellation_factors
-                        .into_iter()
-                        .map(|f| (sum.clone(), f))
-                        .collect::<Vec<_>>(),
-                )
-                .await;
+            let factors = P::unbounded_multiply(
+                protocol,
+                &cancellation_factors
+                    .into_iter()
+                    .map(|f| (sum.clone(), f))
+                    .collect::<Vec<_>>(),
+            )
+            .await;
 
             // reveal factors
             let revealed_factors: Vec<_> = factors

@@ -1,7 +1,4 @@
-use crate::{
-    CliqueCommunicationScheme, Delegate, LinearSharingScheme, MultiplicationScheme, PrimeField,
-    ThresholdSecretSharingScheme,
-};
+use crate::Delegate;
 use futures::Future;
 use jester_sharing_proc::delegatable_protocol;
 use std::pin::Pin;
@@ -14,12 +11,9 @@ pub mod joint_conditional_selection;
 #[delegatable_protocol]
 pub trait ConditionalSelectionScheme<T, S, P>
 where
-    P: ThresholdSecretSharingScheme<T, S>
-        + LinearSharingScheme<T, S>
-        + CliqueCommunicationScheme<T, S>
-        + MultiplicationScheme<T, S>,
-    T: PrimeField,
-    S: 'static,
+    P: Send + Sync,
+    T: Send + Sync,
+    S: Send + Sync,
 {
     /// Select either `lhs` or `rhs` depending on the `condition`.
     /// # Parameters

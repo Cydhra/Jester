@@ -19,6 +19,7 @@ pub mod communication;
 pub mod conditional_selection;
 pub mod inversion;
 pub mod multiplication;
+pub mod prefix_or_function;
 pub mod random_number_generation;
 pub mod shared_or_function;
 pub mod threshold_sharing;

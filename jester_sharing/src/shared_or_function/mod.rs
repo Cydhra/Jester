@@ -15,11 +15,13 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S, P>
         + RandomNumberGenerationScheme<T, S, P>
-        + UnboundedInversionScheme<T, S, P>,
+        + UnboundedInversionScheme<T, S, P>
+        + Send
+        + Sync,
     T: PrimeField + Send + Sync + 'static,
-    S: Clone + 'static,
+    S: Send + Sync + Clone + 'static,
 {
     fn shared_or<'a, R>(
         rng: &'a mut R,
@@ -36,11 +38,13 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S, P>
         + RandomNumberGenerationScheme<T, S, P>
-        + UnboundedInversionScheme<T, S, P>,
+        + UnboundedInversionScheme<T, S, P>
+        + Send
+        + Sync,
     T: PrimeField + Send + Sync + 'static,
-    S: Clone + 'static,
+    S: Send + Sync + Clone + 'static,
 {
     fn unbounded_shared_or<'a, R>(
         rng: &'a mut R,

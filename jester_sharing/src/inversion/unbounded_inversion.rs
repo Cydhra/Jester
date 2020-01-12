@@ -1,8 +1,8 @@
 use futures::future::join_all;
 
 use crate::{
-    CliqueCommunicationScheme, InversionScheme, LinearSharingScheme, UnboundedMultiplicationScheme,
-    RandomNumberGenerationScheme, ThresholdSecretSharingScheme, UnboundedInversionScheme,
+    CliqueCommunicationScheme, InversionScheme, LinearSharingScheme, RandomNumberGenerationScheme,
+    ThresholdSecretSharingScheme, UnboundedInversionScheme, UnboundedMultiplicationScheme,
 };
 
 use crate::{CryptoRng, PrimeField, RngCore};
@@ -19,10 +19,12 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
-        + RandomNumberGenerationScheme<T, S, P>,
-    T: PrimeField,
-    S: Clone + 'static,
+        + UnboundedMultiplicationScheme<T, S, P>
+        + RandomNumberGenerationScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField,
+    S: Send + Sync + Clone + 'static,
 {
     data: PhantomData<T>,
     share: PhantomData<S>,
@@ -34,11 +36,12 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
+        + UnboundedMultiplicationScheme<T, S, P>
         + RandomNumberGenerationScheme<T, S, P>
-        + Send,
-    T: PrimeField,
-    S: Clone + 'static,
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField,
+    S: Send + Sync + Clone + 'static,
 {
     fn inverse<'a, R>(
         rng: &'a mut R,
@@ -61,10 +64,12 @@ where
     P: ThresholdSecretSharingScheme<T, S>
         + LinearSharingScheme<T, S>
         + CliqueCommunicationScheme<T, S>
-        + UnboundedMultiplicationScheme<T, S>
-        + RandomNumberGenerationScheme<T, S, P>,
-    T: PrimeField,
-    S: Clone + 'static,
+        + UnboundedMultiplicationScheme<T, S, P>
+        + RandomNumberGenerationScheme<T, S, P>
+        + Send
+        + Sync,
+    T: Send + Sync + PrimeField,
+    S: Send + Sync + Clone + 'static,
 {
     fn unbounded_inverse<'a, R>(
         rng: &'a mut R,
@@ -83,14 +88,14 @@ where
         Box::pin(async move {
             let helpers = join_all(helpers).await;
 
-            let rerandomized_elements = protocol
-                .unbounded_multiply(
-                    &shares_iter
-                        .into_iter()
-                        .zip(helpers.clone())
-                        .collect::<Vec<_>>(),
-                )
-                .await;
+            let rerandomized_elements = P::unbounded_multiply(
+                protocol,
+                &shares_iter
+                    .into_iter()
+                    .zip(helpers.clone())
+                    .collect::<Vec<_>>(),
+            )
+            .await;
 
             let revealed_elements = rerandomized_elements
                 .into_iter()
