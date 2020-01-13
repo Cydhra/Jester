@@ -7,9 +7,9 @@ use crate::{
     RandomNumberGenerationScheme, RandomNumberGenerationSchemeDelegate,
     RandomNumberGenerationSchemeMarker, ThresholdSecretSharingScheme, UnboundedInversionScheme,
     UnboundedInversionSchemeDelegate, UnboundedInversionSchemeMarker,
-    UnboundedOrFunctionScheme, UnboundedOrFunctionSchemeDelegate,
-    UnboundedOrFunctionSchemeMarker, UnboundedMultiplicationScheme, UnboundedMultiplicationSchemeDelegate,
-    UnboundedMultiplicationSchemeMarker
+    UnboundedMultiplicationScheme, UnboundedMultiplicationSchemeDelegate,
+    UnboundedMultiplicationSchemeMarker, UnboundedOrFunctionScheme,
+    UnboundedOrFunctionSchemeDelegate, UnboundedOrFunctionSchemeMarker,
 };
 
 use futures::executor::block_on;
@@ -37,9 +37,7 @@ pub(super) struct TestProtocol {
     pub(super) participant_id: usize,
 }
 
-impl ShamirSecretSharingScheme<TestPrimeField> for TestProtocol {
-
-}
+impl ShamirSecretSharingScheme<TestPrimeField> for TestProtocol {}
 
 impl RandomNumberGenerationSchemeMarker for TestProtocol {
     type Marker = Delegate;
