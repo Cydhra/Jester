@@ -6,10 +6,10 @@ use futures::Future;
 use jester_sharing_proc::delegatable_protocol;
 use std::pin::Pin;
 
-//pub mod sum_not_zero_random_number_generation;
 pub mod root_random_bit_generation;
-pub mod sum_non_zero_random_number_generation;
 pub mod sum_random_number_generation;
+
+pub(crate) mod sum_non_zero_random_number_generation;
 
 /// A scheme that can be used to randomly generate a share of a number that is unknown to all participants.
 /// # Type Parameters

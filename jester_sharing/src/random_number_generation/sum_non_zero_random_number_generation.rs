@@ -1,3 +1,9 @@
+//! This protocol is a slight adaption of `sum_random_number_generation` in that it won't ever generate `0` as the
+//! local random number. This does not prevent the protocol from generating zero, but it makes it more unlikely to
+//! happen and even impossible for test-cases that only use a single party. This protocol is not useful for any real
+//! protocols, but only for testing within this crate.
+#![cfg(test)]
+
 use crate::{
     CliqueCommunicationScheme, CryptoRng, LinearSharingScheme, PrimeField,
     RandomNumberGenerationScheme, RngCore, ThresholdSecretSharingScheme,
