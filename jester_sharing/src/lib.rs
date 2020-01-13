@@ -27,5 +27,6 @@ pub mod threshold_sharing;
 /// Protocol marker for delegated protocol implementations
 pub struct Delegate;
 
+pub(crate) mod test_implementations;
 #[cfg(test)]
 mod tests;

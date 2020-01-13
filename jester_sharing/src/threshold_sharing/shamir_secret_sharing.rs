@@ -149,46 +149,42 @@ mod tests {
     use num::{FromPrimitive, One};
     use rand::thread_rng;
 
-    use jester_maths::prime::Mersenne89;
+    use super::*;
+    use crate::test_implementations::*;
 
-    use crate::shamir_secret_sharing::ShamirSecretSharingScheme;
-    use crate::ThresholdSecretSharingScheme;
-
-    struct ExampleProtocol;
-
-    impl ShamirSecretSharingScheme<Mersenne89> for ExampleProtocol {}
+    impl ShamirSecretSharingScheme<TestPrimeField> for TestProtocol {}
 
     #[test]
     fn test_generator() {
-        let shares = ExampleProtocol::generate_shares(&mut thread_rng(), &Mersenne89::one(), 5, 5);
+        let shares = TestProtocol::generate_shares(&mut thread_rng(), &TestPrimeField::one(), 5, 5);
         assert_eq!(shares.len(), 5)
     }
 
     #[test]
     fn test_reconstruction() {
-        let shares = ExampleProtocol::generate_shares(
+        let shares = TestProtocol::generate_shares(
             &mut thread_rng(),
-            &Mersenne89::from_usize(20).unwrap(),
+            &TestPrimeField::from_usize(3).unwrap(),
             5,
             5,
         );
         assert_eq!(
-            ExampleProtocol::reconstruct_secret(&shares, 5),
-            Mersenne89::from_usize(20).unwrap()
+            TestProtocol::reconstruct_secret(&shares, 5),
+            TestPrimeField::from_usize(3).unwrap()
         );
     }
 
     #[test]
     fn test_linearity() {
-        let shares = ExampleProtocol::generate_shares(
+        let shares = TestProtocol::generate_shares(
             &mut thread_rng(),
-            &Mersenne89::from_usize(20).unwrap(),
+            &TestPrimeField::from_usize(2).unwrap(),
             2,
             2,
         );
-        let shares_2 = ExampleProtocol::generate_shares(
+        let shares_2 = TestProtocol::generate_shares(
             &mut thread_rng(),
-            &Mersenne89::from_usize(40).unwrap(),
+            &TestPrimeField::from_usize(3).unwrap(),
             2,
             2,
         );
@@ -200,8 +196,8 @@ mod tests {
             .collect();
 
         assert_eq!(
-            ExampleProtocol::reconstruct_secret(&addition, 2),
-            Mersenne89::from_usize(60).unwrap()
+            TestProtocol::reconstruct_secret(&addition, 2),
+            TestPrimeField::from_usize(5).unwrap()
         );
     }
 }
