@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use rand::{CryptoRng, RngCore};
 
+use crate::DecryptionException::OutOfOrderMessage;
 use jester_encryption::diffie_hellman::DiffieHellmanKeyExchangeScheme;
 use jester_encryption::SymmetricalEncryptionScheme;
 use std::collections::HashMap;
@@ -85,6 +86,16 @@ enum ProtocolException<DHPublicKey> {
     IllegalMessageHeader {
         message: &'static str,
     },
+}
+
+/// Exceptions that can arise during decryption of messages. Some can be recovered, like simple out of order
+/// handling, some end the protocol exchange.
+pub enum DecryptionException {
+    /// The message that was decrypted had an invalid header, rendering its decryption impossible
+    InvalidMessageHeader {},
+
+    /// The message was received out of order and that should be reflected to the user appropriately
+    OutOfOrderMessage {},
 }
 
 /// Double-Ratchet-Algorithm protocol state. It has some phantom markers for the used primitives and keeps track of
@@ -224,7 +235,7 @@ where
                 receiving_chain_length: 0,
                 previous_sending_chain_length: 0,
                 previous_receiving_chain_length: 0,
-                missed_messages: HashMap::new()
+                missed_messages: HashMap::new(),
             },
             DoubleRatchetAlgorithmMessage {
                 public_key: public_dh_key,
@@ -303,7 +314,7 @@ where
                 receiving_chain_length: 1,
                 previous_sending_chain_length: 0,
                 previous_receiving_chain_length: 0,
-                missed_messages: HashMap::new()
+                missed_messages: HashMap::new(),
             },
             clear_text,
         )
@@ -395,7 +406,7 @@ where
             receiving_chain_length: 0,
             previous_sending_chain_length: 0,
             previous_receiving_chain_length: 0,
-            missed_messages: HashMap::new()
+            missed_messages: HashMap::new(),
         }
     }
 
@@ -435,10 +446,41 @@ where
         &mut self,
         rng: &mut R,
         message: DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>,
-    ) -> Box<[u8]>
+    ) -> Result<Box<[u8]>, DecryptionException>
     where
         R: RngCore + CryptoRng,
     {
+        let (mut current_chain_missed_messages, mut next_chain_missed_messages) =
+            match detect_missing_messages(self, &message) {
+                Ok(v) => v,
+                Err(ProtocolException::IllegalMessageHeader { message }) => {
+                    return Err(DecryptionException::InvalidMessageHeader {})
+                }
+                Err(ProtocolException::OutOfOrderMessage {
+                    public_key,
+                    message_number,
+                }) => {
+                    todo!("handle out of order messages");
+                    return Err(OutOfOrderMessage {});
+                }
+            };
+
+        // insert missing message keys into missed_messages dictionary
+        while current_chain_missed_messages > 0 {
+            let (new_chain_key, output_key) =
+                MessageKdf::derive_key_without_input(self.receiving_chain_key.take().unwrap());
+            self.receiving_chain_key = Some(new_chain_key);
+            self.receiving_chain_length += 1;
+            self.missed_messages.insert(
+                (
+                    self.diffie_hellman_received_key.clone().unwrap(),
+                    self.receiving_chain_length,
+                ),
+                output_key,
+            );
+            current_chain_missed_messages -= 1;
+        }
+
         // if this message contains a new public key
         let message_key = if self.diffie_hellman_received_key.is_none()
             || !message
@@ -452,10 +494,25 @@ where
             );
 
             // update receiving chain
-            let (updated_root_key, receiving_chain_key) = RootKdf::derive_key(
+            let (updated_root_key, mut receiving_chain_key) = RootKdf::derive_key(
                 self.root_chain_key.take().unwrap(),
                 generated_dh_private_key,
             );
+            self.receiving_chain_length = 0;
+
+            // if messages of this new chain were missed:
+            while next_chain_missed_messages > 0 {
+                self.receiving_chain_length += 1;
+                let (updated_receiving_chain_key, message_key) =
+                    MessageKdf::derive_key_without_input(receiving_chain_key);
+                receiving_chain_key = updated_receiving_chain_key;
+                self.missed_messages.insert(
+                    (message.public_key.clone(), self.receiving_chain_length),
+                    message_key,
+                );
+                next_chain_missed_messages -= 1;
+            }
+
             let (updated_receiving_chain_key, message_key) =
                 MessageKdf::derive_key_without_input(receiving_chain_key);
             self.receiving_chain_key = Some(updated_receiving_chain_key);
@@ -497,7 +554,10 @@ where
         };
 
         // decrypt message
-        EncryptionScheme::decrypt_message(&message_key, &message.message.unwrap())
+        Ok(EncryptionScheme::decrypt_message(
+            &message_key,
+            &message.message.unwrap(),
+        ))
     }
 }
 
@@ -563,7 +623,10 @@ where
         // this is the first ever message received
         // the message number tells how many messages came before that were missed
         Ok((0, message.message_number))
-    } else if message.public_key.eq(protocol.diffie_hellman_received_key.as_ref().unwrap()) {
+    } else if message
+        .public_key
+        .eq(protocol.diffie_hellman_received_key.as_ref().unwrap())
+    {
         if message.message_number >= protocol.receiving_chain_length {
             // this message belongs to the current chain, return the difference to the receiving chain length
             return Ok((message.message_number - protocol.receiving_chain_length, 0));
