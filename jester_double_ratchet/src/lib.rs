@@ -98,7 +98,11 @@ pub enum DecryptionException {
     InvalidMessageHeader {},
 
     /// The message was received out of order and that should be reflected to the user appropriately
-    OutOfOrderMessage {},
+    OutOfOrderMessage { decrypted_message: Box<[u8]> },
+
+    /// The message header identified the message as an out-of-order message but no message key for this out-of-order
+    /// arrival could be generated, rendering its decryption impossible
+    UnknownMessageHeader {},
 }
 
 /// Double-Ratchet-Algorithm protocol state. It has some phantom markers for the used primitives and keeps track of
@@ -463,8 +467,15 @@ where
                     public_key,
                     message_number,
                 }) => {
-                    todo!("handle out of order messages");
-                    return Err(OutOfOrderMessage {});
+                    let dictionary_key = (public_key, message_number);
+                    if !self.missed_messages.contains_key(&dictionary_key) {
+                        return Err(UnknownMessage);
+                    }
+
+                    let message_key = self.missed_messages.remove(&dictionary_key).unwrap();
+                    let decrypted_message =
+                        EncryptionScheme::decrypt_message(&message_key, &message.message.unwrap());
+                    return Err(OutOfOrderMessage { decrypted_message });
                 }
             };
 
