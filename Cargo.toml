@@ -1,2 +1,9 @@
 [workspace]
-members = ["jester_maths", "jester_double_ratchet", "jester_encryption", "jester_hashes", "jester_sharing" ]
+members = [
+    "jester_maths",
+    "jester_double_ratchet",
+    "jester_encryption",
+    "jester_hashes",
+    "jester_sharing",
+    "jester_signing"
+     ]
