@@ -8,6 +8,9 @@ use jester_encryption::SymmetricalEncryptionScheme;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+#[cfg(test)]
+mod tests;
+
 /// A trait modelling a key-derivation-function as defined by the specification of the Double
 /// Ratchet Algorithm by Trevor Perrin and Moxie Marlinspike.
 pub trait KeyDerivationFunction {
