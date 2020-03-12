@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use rand::{CryptoRng, RngCore};
 
-use crate::DecryptionException::OutOfOrderMessage;
+use crate::DecryptionException::{OutOfOrderMessage, UnknownMessageHeader};
 use jester_encryption::diffie_hellman::DiffieHellmanKeyExchangeScheme;
 use jester_encryption::SymmetricalEncryptionScheme;
 use std::collections::HashMap;
@@ -469,7 +469,7 @@ where
                 }) => {
                     let dictionary_key = (public_key, message_number);
                     if !self.missed_messages.contains_key(&dictionary_key) {
-                        return Err(UnknownMessage);
+                        return Err(UnknownMessageHeader {});
                     }
 
                     let message_key = self.missed_messages.remove(&dictionary_key).unwrap();
