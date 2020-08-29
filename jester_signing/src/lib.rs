@@ -1,3 +1,5 @@
+use rand::{RngCore, CryptoRng};
+
 /// An scheme to digitally sign messages using means of asymmetrical cryptography. Exposes a way to obtain a key pair
 /// for use in the signature scheme.
 pub trait SignatureScheme {
@@ -18,7 +20,7 @@ pub trait SignatureScheme {
     /// # Parameters
     /// - `rng` a cryptographically secure random number generator
     fn generate_key_pair<R>(rng: &mut R) -> (Self::PublicKey, Self::PrivateKey)
-        where R: RngCore + CryptRng;
+        where R: RngCore + CryptoRng;
 
     /// Generate a signature from a message
     ///
@@ -27,7 +29,7 @@ pub trait SignatureScheme {
     /// - `message` the message to which a signature shall be generated
     /// - `private_key` the secret key used to obtain the signature
     fn sign<R>(rng: &mut R, message: Self::Message, private_key: Self::PrivateKey) -> Self::SignatureType
-        where R: RngCore + CryptRng;
+        where R: RngCore + CryptoRng;
 
     /// Verify for a message if a given signature is valid. Returns true, if the given signature is a valid signature
     /// of the given message.

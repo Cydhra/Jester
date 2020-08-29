@@ -5,3 +5,4 @@ authors = ["Cydhra <ubezl@student.kit.edu>"]
 edition = "2018"
 
 [dependencies]
+rand = "0.5.6"
