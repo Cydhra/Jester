@@ -52,7 +52,7 @@ macro_rules! prime_fields {
             }
 
             $name! {
-                #[derive(Clone, Debug, PartialEq, PartialOrd)]
+                #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
                 $v struct $name($crate::prime::num_bigint::BigUint);
 
                 impl std::ops::Add<$name> for $name {
