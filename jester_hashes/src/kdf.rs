@@ -1,11 +1,10 @@
 //! Traits and implementations for key derivation functions
 
+use std::f64;
+use std::ops::Deref;
+
 use crate::HashFunction;
 use crate::hmac::hmac;
-use std::f64;
-use std::str;
-use std::ops::Deref;
-use crate::pr::SaltedPseudoRandomFunction;
 
 /// HMAC based key derivation function. A key of length `output_length` is generated.
 fn hkdf_derive_key<Hash>(salt: &[u8], ikm: &[u8], output_length: usize, info: &[u8]) -> Box<[u8]>
@@ -22,6 +21,8 @@ fn hkdf_derive_key<Hash>(salt: &[u8], ikm: &[u8], output_length: usize, info: &[
 
     Box::from(parts.concat())
 }
+
+
 
 #[cfg(test)]
 mod tests {
