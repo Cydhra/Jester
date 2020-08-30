@@ -4,6 +4,7 @@
 use std::{mem::MaybeUninit, ptr};
 
 pub mod hmac;
+pub mod kdf;
 pub mod md5;
 pub mod sha1;
 
