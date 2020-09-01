@@ -7,7 +7,7 @@ use crate::HashFunction;
 use crate::hmac::hmac;
 
 /// HMAC based key derivation function. A key of length `output_length` is generated.
-fn hkdf_derive_key<Hash>(salt: &[u8], ikm: &[u8], output_length: usize, info: &[u8]) -> Box<[u8]>
+pub fn hkdf_derive_key<Hash>(salt: &[u8], ikm: &[u8], output_length: usize, info: &[u8]) -> Box<[u8]>
     where Hash: HashFunction
 {
     let pseudo_random_key = hmac::<Hash>(salt, ikm);
