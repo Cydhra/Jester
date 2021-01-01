@@ -7,6 +7,7 @@ pub mod hmac;
 pub mod kdf;
 pub mod md5;
 pub mod sha1;
+pub mod blake;
 
 /// Copies the ``source`` array to the ``dest`` array with respect to alignment and endianness. ``source`` must be at
 /// least four times bigger than ``dest``, otherwise this function's behavior is undefined. Data from ``source``
