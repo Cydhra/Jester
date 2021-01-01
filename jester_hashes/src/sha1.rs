@@ -93,11 +93,11 @@ impl SHA1Hash {
 
         let relevant_data = &input[message_blocks_count * BLOCK_LENGTH_BYTES..];
 
+        // prepare a zero-padded full-length block
         let mut last_block = [0_u8; BLOCK_LENGTH_BYTES];
+
         // append the last part of message to the block
-        for (dst, src) in last_block.iter_mut().zip(relevant_data.iter()) {
-            *dst = *src
-        }
+        last_block[..relevant_data.len()].copy_from_slice(relevant_data);
 
         // append a single 1-bit to the end of the message
         last_block[relevant_data.len()] = 0x80_u8;
