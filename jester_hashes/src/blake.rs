@@ -2,9 +2,10 @@
 
 use std::convert::TryInto;
 use std::mem;
+use std::mem::size_of;
 
-use num::traits::WrappingAdd;
-use num::PrimInt;
+use num::{PrimInt, ToPrimitive};
+use num::traits::{AsPrimitive, WrappingAdd};
 
 use crate::HashFunction;
 
@@ -34,39 +35,48 @@ pub struct Blake2bHash([u64; 8]);
 #[derive(Debug, Copy, Clone)]
 pub struct Blake2sHash([u32; 8]);
 
-fn blake2_mix_function<
-    N: WrappingAdd + PrimInt,
-    const R1: u8,
-    const R2: u8,
-    const R3: u8,
-    const R4: u8,
->(
-    vector: &mut [N; 16],
-    a: usize,
-    b: usize,
-    c: usize,
-    d: usize,
-    x: N,
-    y: N,
-) {
-    vector[a] = vector[a].wrapping_add(&vector[b]).wrapping_add(&x);
-    vector[d] = (vector[d] ^ vector[a]).rotate_right(R1.try_into().unwrap());
-    vector[c] = vector[c].wrapping_add(&vector[b]);
-    vector[b] = (vector[b] ^ vector[c]).rotate_right(R2.try_into().unwrap());
+pub trait Blake2Algorithm<N: WrappingAdd + PrimInt> {
+    /// The Blake2 mix function as defined by RFC 7693. It operates upon a mutable array of 16 words
+    /// (word length depends on the algorithm subtype). No values is returned, as the working vector
+    /// is changed in-place. The mixing constants R1 to R4 are given as constant generics.
+    fn blake2_mix<const R1: u8, const R2: u8, const R3: u8, const R4: u8>(
+        vector: &mut [N; 16],
+        a: usize,
+        b: usize,
+        c: usize,
+        d: usize,
+        x: N,
+        y: N,
+    ) {
+        vector[a] = vector[a].wrapping_add(&vector[b]).wrapping_add(&x);
+        vector[d] = (vector[d] ^ vector[a]).rotate_right(R1.try_into().unwrap());
+        vector[c] = vector[c].wrapping_add(&vector[b]);
+        vector[b] = (vector[b] ^ vector[c]).rotate_right(R2.try_into().unwrap());
 
-    vector[a] = vector[a].wrapping_add(&vector[b]).wrapping_add(&y);
-    vector[d] = (vector[d] ^ vector[a]).rotate_right(R3.try_into().unwrap());
-    vector[c] = vector[c].wrapping_add(&vector[d]);
-    vector[b] = (vector[b] ^ vector[c]).rotate_right(R4.try_into().unwrap());
+        vector[a] = vector[a].wrapping_add(&vector[b]).wrapping_add(&y);
+        vector[d] = (vector[d] ^ vector[a]).rotate_right(R3.try_into().unwrap());
+        vector[c] = vector[c].wrapping_add(&vector[d]);
+        vector[b] = (vector[b] ^ vector[c]).rotate_right(R4.try_into().unwrap());
+    }
+
+    fn blake2_compress(state: &mut [N; 8], iv: &[N; 8], input_block: &[u8], byte_count: usize) {
+        // initialize local working vector
+        let mut vector: [N; 16] = [N::from(0u8).unwrap(); 16];
+        vector[0..=7].copy_from_slice(&state[..]);
+        vector[8..=15].copy_from_slice(&iv[..]);
+
+        if size_of::<N>() == size_of::<usize>() {
+            vector[12] = vector[12] ^ N::from::<usize>(byte_count).unwrap()
+        } else {
+            vector[12] = vector[12] ^ N::from::<u64>(byte_count.to_u64().unwrap()
+                % (1u64 << size_of::<N>())).unwrap()
+        }
+    }
 }
 
 impl Blake2bHash {
     pub fn mix_function(&mut self) {}
 
-    /// SHA-1 round function that corresponds to the digestion of exactly one block of data. This block must be
-    /// exactly `BLOCK_LENGTH_BYTES` long.
-    /// # Parameters
-    /// - `input_block` a block of data to be digested
     pub fn round_function(&mut self, input_block: &[u8]) {
         assert_eq!(input_block.len(), BLOCK_LENGTH_BYTES);
 
@@ -74,7 +84,6 @@ impl Blake2bHash {
     }
 
     /// Digest the last (partial) block of input data.
-    #[allow(clippy::cast_possible_truncation)]
     pub fn digest_last_block(&mut self, input: &[u8]) {
         unimplemented!()
     }
