@@ -12,7 +12,7 @@ use crate::HashFunction;
 const BLOCK_LENGTH_BYTES: usize = 128;
 
 /// Blake2 round permutation matrix. In round i row i mod 10 is used to permute the input block.
-/// Column j denotes which input word is to be used as input word j.
+/// Column j denotes which input word is to be used as word j for the mixing function.
 pub const SIGMA: [[usize; 16]; 10] = [
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
     [14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3],
