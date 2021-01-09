@@ -81,6 +81,14 @@ fn blake2_mix<N: WrappingAdd + PrimInt, const R1: u8, const R2: u8, const R3: u8
     vector[b] = (vector[b] ^ vector[c]).rotate_right(R4.try_into().unwrap());
 }
 
+fn blake2b_mix(vector: &mut [u64; 16], a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) {
+    blake2_mix::<u64, 32, 24, 16, 63>(vector, a, b, c, d, x, y)
+}
+
+fn blake2s_mix(vector: &mut [u32; 16], a: usize, b: usize, c: usize, d: usize, x: u32, y: u32) {
+    blake2_mix::<u32, 16, 12, 8, 7>(vector, a, b, c, d, x, y)
+}
+
 fn blake2b_compress(state: &mut [u64; 8], iv: &[u64; 8], input_block: &[u64; 16], byte_count: u128,
                     last_block: bool) {
     // initialize local working vector
@@ -98,29 +106,29 @@ fn blake2b_compress(state: &mut [u64; 8], iv: &[u64; 8], input_block: &[u64; 16]
     for i in 0..BLAKE_2B_ROUND_COUNT {
         let permutation = &SIGMA[i % 10][0..16];
 
-        blake2_mix::<u64, 32, 24, 16, 63>(&mut vector, 0, 4, 8, 12,
+        blake2b_mix(&mut vector, 0, 4, 8, 12,
                                           input_block[permutation[0]],
                                           input_block[permutation[1]]);
-        blake2_mix::<u64, 32, 24, 16, 63>(&mut vector, 1, 5, 9, 13,
+        blake2b_mix(&mut vector, 1, 5, 9, 13,
                                           input_block[permutation[2]],
                                           input_block[permutation[3]]);
-        blake2_mix::<u64, 32, 24, 16, 63>(&mut vector, 2, 6, 10, 14,
+        blake2b_mix(&mut vector, 2, 6, 10, 14,
                                           input_block[permutation[4]],
                                           input_block[permutation[5]]);
-        blake2_mix::<u64, 32, 24, 16, 63>(&mut vector, 3, 7, 11, 15,
+        blake2b_mix(&mut vector, 3, 7, 11, 15,
                                           input_block[permutation[6]],
                                           input_block[permutation[7]]);
 
-        blake2_mix::<u64, 32, 24, 16, 63>(&mut vector, 0, 5, 10, 15,
+        blake2b_mix(&mut vector, 0, 5, 10, 15,
                                           input_block[permutation[8]],
                                           input_block[permutation[9]]);
-        blake2_mix::<u64, 32, 24, 16, 63>(&mut vector, 1, 6, 11, 12,
+        blake2b_mix(&mut vector, 1, 6, 11, 12,
                                           input_block[permutation[10]],
                                           input_block[permutation[11]]);
-        blake2_mix::<u64, 32, 24, 16, 63>(&mut vector, 2, 7, 8, 13,
+        blake2b_mix(&mut vector, 2, 7, 8, 13,
                                           input_block[permutation[12]],
                                           input_block[permutation[13]]);
-        blake2_mix::<u64, 32, 24, 16, 63>(&mut vector, 3, 4, 9, 14,
+        blake2b_mix(&mut vector, 3, 4, 9, 14,
                                           input_block[permutation[14]],
                                           input_block[permutation[15]]);
     }
@@ -147,31 +155,31 @@ fn blake2s_compress(state: &mut [u32; 8], iv: &[u32; 8], input_block: &[u32; 16]
     for i in 0..BLAKE_2S_ROUND_COUNT {
         let permutation = &SIGMA[i % 10][0..16];
 
-        blake2_mix::<u32, 16, 12, 8, 7>(&mut vector, 0, 4, 8, 12,
-                                          input_block[permutation[0]],
-                                          input_block[permutation[1]]);
-        blake2_mix::<u32, 16, 12, 8, 7>(&mut vector, 1, 5, 9, 13,
-                                          input_block[permutation[2]],
-                                          input_block[permutation[3]]);
-        blake2_mix::<u32, 16, 12, 8, 7>(&mut vector, 2, 6, 10, 14,
-                                          input_block[permutation[4]],
-                                          input_block[permutation[5]]);
-        blake2_mix::<u32, 16, 12, 8, 7>(&mut vector, 3, 7, 11, 15,
-                                          input_block[permutation[6]],
-                                          input_block[permutation[7]]);
+        blake2s_mix(&mut vector, 0, 4, 8, 12,
+                                        input_block[permutation[0]],
+                                        input_block[permutation[1]]);
+        blake2s_mix(&mut vector, 1, 5, 9, 13,
+                                        input_block[permutation[2]],
+                                        input_block[permutation[3]]);
+        blake2s_mix(&mut vector, 2, 6, 10, 14,
+                                        input_block[permutation[4]],
+                                        input_block[permutation[5]]);
+        blake2s_mix(&mut vector, 3, 7, 11, 15,
+                                        input_block[permutation[6]],
+                                        input_block[permutation[7]]);
 
-        blake2_mix::<u32, 16, 12, 8, 7>(&mut vector, 0, 5, 10, 15,
-                                          input_block[permutation[8]],
-                                          input_block[permutation[9]]);
-        blake2_mix::<u32, 16, 12, 8, 7>(&mut vector, 1, 6, 11, 12,
-                                          input_block[permutation[10]],
-                                          input_block[permutation[11]]);
-        blake2_mix::<u32, 16, 12, 8, 7>(&mut vector, 2, 7, 8, 13,
-                                          input_block[permutation[12]],
-                                          input_block[permutation[13]]);
-        blake2_mix::<u32, 16, 12, 8, 7>(&mut vector, 3, 4, 9, 14,
-                                          input_block[permutation[14]],
-                                          input_block[permutation[15]]);
+        blake2s_mix(&mut vector, 0, 5, 10, 15,
+                                        input_block[permutation[8]],
+                                        input_block[permutation[9]]);
+        blake2s_mix(&mut vector, 1, 6, 11, 12,
+                                        input_block[permutation[10]],
+                                        input_block[permutation[11]]);
+        blake2s_mix(&mut vector, 2, 7, 8, 13,
+                                        input_block[permutation[12]],
+                                        input_block[permutation[13]]);
+        blake2s_mix(&mut vector, 3, 4, 9, 14,
+                                        input_block[permutation[14]],
+                                        input_block[permutation[15]]);
     }
 
     for i in 0..8 {
