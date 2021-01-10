@@ -4,7 +4,7 @@
 use std::mem;
 use std::mem::size_of;
 
-use crate::{align_to_u32a_le, HashFunctionObsolete};
+use crate::{align_to_u32a_le, BlockHashFunction, HashFunction, HashFunctionObsolete, HashValue};
 
 /// the hash block length in bytes
 const BLOCK_LENGTH_BYTES: usize = 64;
@@ -38,21 +38,30 @@ static MAGIC_SINUS_SCALARS: [u32; 64] = [
     0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
 ];
 
-impl MD5Hash {
+impl HashFunction for MD5Hash {
+    type Context = ();
+    type HashState = MD5Hash;
+    type HashData = MD5Hash;
+
+    fn init_hash(ctx: &Self::Context) -> Self::HashState {
+        INITIAL
+    }
+
     /// Compute one round of the MD5 hash function.
     ///
     /// # Parameters
-    /// `input_block` a 16 byte array containing one block of input data that gets digested
+    /// `input` a 16 byte array containing one block of input data that gets digested.
+    /// TODO: this may be more or less data, store excess in the state
     ///
     /// # Returns
     /// A new `MD5HashState` computed from the input state and the input data block.
-    pub fn round_function(&mut self, input: &[u8]) {
+    fn update_hash(hash: &mut Self::HashState, ctx: &Self::Context, input: &[u8]) {
         assert_eq!(input.len(), BLOCK_LENGTH_BYTES);
 
         let mut input_block = [0_u32; BLOCK_LENGTH_DOUBLE_WORDS];
         unsafe { align_to_u32a_le(&mut input_block, input) };
 
-        let mut round_state = *self;
+        let mut round_state = *hash;
 
         for i in 0..BLOCK_LENGTH_BYTES {
             let (scrambled_data, message_index) = match i {
@@ -89,10 +98,10 @@ impl MD5Hash {
             round_state.0 = temp;
         }
 
-        self.0 = self.0.wrapping_add(round_state.0);
-        self.1 = self.1.wrapping_add(round_state.1);
-        self.2 = self.2.wrapping_add(round_state.2);
-        self.3 = self.3.wrapping_add(round_state.3);
+        hash.0 = hash.0.wrapping_add(round_state.0);
+        hash.1 = hash.1.wrapping_add(round_state.1);
+        hash.2 = hash.2.wrapping_add(round_state.2);
+        hash.3 = hash.3.wrapping_add(round_state.3);
     }
 
     /// Apply padding to the last incomplete block and digest it. May digest two blocks, if the
@@ -102,7 +111,7 @@ impl MD5Hash {
     /// `input` the input array that shall be padded and applied. It can be longer than one block,
     /// all full blocks prefixing the array will be omitted.
     #[allow(clippy::cast_possible_truncation)]
-    pub fn digest_last_block(&mut self, input: &[u8]) {
+    fn finish_hash(hash: &mut Self::HashState, ctx: &Self::Context, input: &[u8]) -> Self::HashData {
         let message_length_bits: u64 = (input.len() as u64) * 8_u64;
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 
@@ -127,48 +136,47 @@ impl MD5Hash {
                     (message_length_bits >> (i * 8) as u64) as u8;
             }
 
-            self.round_function(&last_block);
-            self.round_function(&overflow_block);
+            Self::update_hash(hash, ctx, &last_block);
+            Self::update_hash(hash, ctx, &overflow_block);
         } else {
             // append the message length in bits
             for i in 0..8 {
                 last_block[56 + i] = (message_length_bits >> (i * 8) as u64) as u8;
             }
 
-            self.round_function(&last_block);
+            Self::update_hash(hash, ctx, &last_block);
         }
+
+        hash.clone()
     }
-}
 
-impl HashFunctionObsolete for MD5Hash {
-    const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
-
-    const OUTPUT_SIZE: usize = mem::size_of::<Self>();
-
-    /// Digest a full message of arbitrary size.
-    /// # Parameters
-    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
-    ///
-    /// # Returns
-    /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
-    /// length was appended to the input data for digestion.
-    fn digest_message(input: &[u8]) -> Self {
-        let mut hash_state = INITIAL;
+    fn digest_message(ctx: &Self::Context, input: &[u8]) -> Self::HashData {
+        let mut hash_state = Self::init_hash(ctx);
         let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
 
         // digest full blocks
         for block_index in 0..message_blocks_count {
-            hash_state.round_function(
-                &input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES],
+            Self::update_hash(&mut hash_state, ctx,
+                              &input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES],
             );
         }
 
         // pad and digest last block
-        hash_state.digest_last_block(input);
+        Self::finish_hash(&mut hash_state, ctx, input)
+    }
+}
 
-        hash_state
+impl BlockHashFunction for MD5Hash {
+    fn block_size(_ctx: &Self::Context) -> usize {
+        BLOCK_LENGTH_BYTES
     }
 
+    fn output_size(_ctx: &Self::Context) -> usize {
+        size_of::<MD5Hash>()
+    }
+}
+
+impl HashValue for MD5Hash {
     /// Generates a raw `[u8; 16]` array from the current hash state.
     fn raw(&self) -> Box<[u8]> {
         unsafe {
@@ -179,7 +187,7 @@ impl HashFunctionObsolete for MD5Hash {
                 u32::from_le(self.3),
             ])
         }
-        .to_vec()
-        .into()
+            .to_vec()
+            .into()
     }
 }
