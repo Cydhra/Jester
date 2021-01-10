@@ -3,7 +3,7 @@
 use std::mem;
 use std::mem::size_of;
 
-use crate::{align_to_u32a_be, HashFunction};
+use crate::{align_to_u32a_be, HashFunctionObsolete};
 
 const BLOCK_LENGTH_BYTES: usize = 64;
 
@@ -127,7 +127,7 @@ impl SHA1Hash {
     }
 }
 
-impl HashFunction for SHA1Hash {
+impl HashFunctionObsolete for SHA1Hash {
     const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
 
     const OUTPUT_SIZE: usize = mem::size_of::<Self>();

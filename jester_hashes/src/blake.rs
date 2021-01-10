@@ -7,7 +7,7 @@ use std::mem::size_of;
 use num::{PrimInt, ToPrimitive};
 use num::traits::{AsPrimitive, WrappingAdd};
 
-use crate::HashFunction;
+use crate::HashFunctionObsolete;
 
 const BLOCK_LENGTH_BYTES: usize = 128;
 
@@ -202,7 +202,7 @@ impl Blake2bHash {
     }
 }
 
-impl HashFunction for Blake2bHash {
+impl HashFunctionObsolete for Blake2bHash {
     const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
 
     const OUTPUT_SIZE: usize = mem::size_of::<Self>();

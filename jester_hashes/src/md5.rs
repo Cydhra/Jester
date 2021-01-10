@@ -4,7 +4,7 @@
 use std::mem;
 use std::mem::size_of;
 
-use crate::{align_to_u32a_le, HashFunction};
+use crate::{align_to_u32a_le, HashFunctionObsolete};
 
 /// the hash block length in bytes
 const BLOCK_LENGTH_BYTES: usize = 64;
@@ -140,7 +140,7 @@ impl MD5Hash {
     }
 }
 
-impl HashFunction for MD5Hash {
+impl HashFunctionObsolete for MD5Hash {
     const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
 
     const OUTPUT_SIZE: usize = mem::size_of::<Self>();

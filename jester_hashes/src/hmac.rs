@@ -1,4 +1,4 @@
-use crate::HashFunction;
+use crate::{BlockHashFunction, HashContext, HashFunction, HashFunctionObsolete, HashValue};
 
 /// Generate a keyed-hash message authentication code from a `HashFunction` and a given key using the HMAC protocol
 /// of RFC 2104.
@@ -9,18 +9,21 @@ use crate::HashFunction;
 ///
 /// #Outputs
 /// Returns a boxed slice containing the raw authentication code
-pub fn hmac<H>(key: &[u8], message: &[u8]) -> Box<[u8]>
-where
-    H: HashFunction,
+pub fn hmac<Hash, Context>(ctx: &Context, key: &[u8], message: &[u8]) -> Box<[u8]>
+    where
+        Context: HashContext,
+        Hash: BlockHashFunction<Context=Context>,
 {
-    let shortened_key = if key.len() > H::BLOCK_SIZE {
-        H::digest_message(key).raw()
+    let block_size = Hash::block_size(ctx);
+
+    let shortened_key = if key.len() > block_size {
+        Hash::digest_message(ctx, key).raw()
     } else {
         key.into()
     };
 
-    let padded_key = if shortened_key.len() < H::BLOCK_SIZE {
-        pad(key, H::BLOCK_SIZE)
+    let padded_key = if shortened_key.len() < block_size {
+        pad(key, block_size)
     } else {
         shortened_key
     };
@@ -33,9 +36,9 @@ where
     let mut inner_message = padded_key.iter().map(|v| v ^ 0x36).collect::<Vec<_>>();
 
     inner_message.append(&mut message.to_vec());
-    outer_message.append(&mut H::digest_message(&inner_message).raw().into());
+    outer_message.append(&mut Hash::digest_message(ctx,&inner_message).raw().into());
 
-    H::digest_message(&outer_message).raw()
+    Hash::digest_message(ctx, &outer_message).raw()
 }
 
 fn pad(key: &[u8], length: usize) -> Box<[u8]> {

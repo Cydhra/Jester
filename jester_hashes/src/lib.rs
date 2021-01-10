@@ -45,8 +45,62 @@ pub(crate) unsafe fn align_to_u32a_be(dest: &mut [u32], source: &[u8]) {
     }
 }
 
-/// Any hash function that can digest arbitrarily sized input.
+pub trait HashContext {
+    // Marker trait
+}
+
+/// Output of a `HashFunction`.
+pub trait HashValue {
+    /// Obtain the hash as a raw byte array.
+    fn raw(&self) -> Box<[u8]>;
+}
+
+/// An implementation of a hashing algorithm. It defines three implementation dependent types,
+/// one of which is the output hash type.
 pub trait HashFunction {
+    /// Implementation dependent context during hashing. May contain parameters specific to the
+    /// algorithm.
+    type Context: HashContext;
+
+    /// Contains the current unfinished hash value. It is constructed using `init_hash` and then
+    /// used by this function as the target vector where all data is compressed into.
+    type HashState;
+
+    /// Final hash value that is obtained through completion of the hashing function. It may be
+    /// the same type as `Self::HashState` though it is treated as a separate type to ensure
+    /// correct usage.
+    type HashData: HashValue;
+
+    /// Obtain an initial hash value (usually the IV) conforming to the parameters set by the
+    /// given `Self::Context`. The given `ctx` value may not be changed or
+    fn init_hash(ctx: &Self::Context) -> Self::HashState;
+
+    /// Update the hash with more data. If not all data can be consumed, the remaining buffer
+    /// will be stored within the given context structure.
+    fn update_hash(hash: &mut Self::HashState, ctx: &Self::Context, input: &[u8]);
+
+    /// Finish the hash using the last bit of input data. The resulting hash is returned. The
+    /// given `ctx` is then in a final state and may not be used for further hashing without a
+    /// previous call of `init_hash`.
+    fn finish_hash(hash: &mut Self::HashState, ctx: Self::Context, input: &[u8]) -> Self::HashData;
+
+    /// Convenience method to initialize a hash state and completely compress the given `input`
+    /// into it. Then the final hash is returned.
+    fn digest_message(ctx: &Self::Context, input: &[u8]) -> Self::HashData;
+}
+
+/// A special hash function that consumes input in blocks of uniform size.
+pub trait BlockHashFunction: HashFunction {
+
+    /// Obtain the block size this hash consumes given the specified context.
+    fn block_size(ctx: &Self::Context) -> usize;
+
+    /// Obtain the output size this hash will produce given the specified context.
+    fn output_size(ctx: &Self::Context) -> usize;
+}
+
+/// Any hash function that can digest arbitrarily sized input.
+pub trait HashFunctionObsolete {
     /// The digestion block size of this hash function
     const BLOCK_SIZE: usize;
 
