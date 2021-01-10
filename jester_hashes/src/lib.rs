@@ -45,10 +45,6 @@ pub(crate) unsafe fn align_to_u32a_be(dest: &mut [u32], source: &[u8]) {
     }
 }
 
-pub trait HashContext {
-    // Marker trait
-}
-
 /// Output of a `HashFunction`.
 pub trait HashValue {
     /// Obtain the hash as a raw byte array.
@@ -60,7 +56,7 @@ pub trait HashValue {
 pub trait HashFunction {
     /// Implementation dependent context during hashing. May contain parameters specific to the
     /// algorithm.
-    type Context: HashContext;
+    type Context;
 
     /// Contains the current unfinished hash value. It is constructed using `init_hash` and then
     /// used by this function as the target vector where all data is compressed into.
@@ -82,7 +78,7 @@ pub trait HashFunction {
     /// Finish the hash using the last bit of input data. The resulting hash is returned. The
     /// given `ctx` is then in a final state and may not be used for further hashing without a
     /// previous call of `init_hash`.
-    fn finish_hash(hash: &mut Self::HashState, ctx: Self::Context, input: &[u8]) -> Self::HashData;
+    fn finish_hash(hash: &mut Self::HashState, ctx: &Self::Context, input: &[u8]) -> Self::HashData;
 
     /// Convenience method to initialize a hash state and completely compress the given `input`
     /// into it. Then the final hash is returned.
@@ -143,17 +139,17 @@ show them the serenity of the void.";
     #[test]
     fn test_md5() {
         assert_eq!(
-            hex::encode(&MD5Hash::digest_message(EMPTY_MESSAGE.as_bytes()).raw()),
+            hex::encode(&MD5Hash::digest_message(&(),EMPTY_MESSAGE.as_bytes()).raw()),
             "d41d8cd98f00b204e9800998ecf8427e"
         );
 
         assert_eq!(
-            hex::encode(&MD5Hash::digest_message(SOME_TEXT.as_bytes()).raw()),
+            hex::encode(&MD5Hash::digest_message(&(),SOME_TEXT.as_bytes()).raw()),
             "9cf653b21b12797c80f769c8a753c360"
         );
 
         assert_eq!(
-            hex::encode(&MD5Hash::digest_message(LONG_TEXT.as_bytes()).raw()),
+            hex::encode(&MD5Hash::digest_message(&(),LONG_TEXT.as_bytes()).raw()),
             "b3e7bf1f1a433eae2001458324ccb2e8"
         );
     }

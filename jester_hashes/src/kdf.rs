@@ -3,14 +3,12 @@
 use std::f64;
 use std::ops::Deref;
 
-use crate::{HashContext, HashFunction, HashFunctionObsolete, BlockHashFunction};
+use crate::{BlockHashFunction, HashFunction, HashFunctionObsolete};
 use crate::hmac::hmac;
 
 /// HMAC based key derivation function. A key of length `output_length` is generated.
 pub fn hkdf_derive_key<Hash, Context>(ctx: &Context, salt: &[u8], ikm: &[u8], output_length: usize, info: &[u8]) -> Box<[u8]>
-    where
-        Context: HashContext,
-        Hash: BlockHashFunction<Context=Context>
+    where Hash: BlockHashFunction<Context=Context>
 {
     let pseudo_random_key = hmac::<Hash, Context>(ctx, salt, ikm);
     let partials: usize = f64::ceil(output_length as f64 / Hash::output_size(ctx) as f64) as usize;
