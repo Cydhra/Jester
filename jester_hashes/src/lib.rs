@@ -78,7 +78,7 @@ pub trait HashFunction {
     /// Finish the hash using the last bit of input data. The resulting hash is returned. The
     /// given `ctx` is then in a final state and may not be used for further hashing without a
     /// previous call of `init_hash`.
-    fn finish_hash(hash: &mut Self::HashState, ctx: &Self::Context, input: &[u8]) -> Self::HashData;
+    fn finish_hash(hash: &mut Self::HashState, ctx: &Self::Context) -> Self::HashData;
 
     /// Convenience method to initialize a hash state and completely compress the given `input`
     /// into it. Then the final hash is returned.

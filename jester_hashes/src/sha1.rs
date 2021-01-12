@@ -141,7 +141,7 @@ impl HashFunction for SHA1Hash {
         hash.remaining_data = remaining_data.to_vec();
     }
 
-    fn finish_hash(hash: &mut Self::HashState, _ctx: &Self::Context, input: &[u8]) ->
+    fn finish_hash(hash: &mut Self::HashState, _ctx: &Self::Context) ->
                                                                                    Self::HashData {
         // TODO: remove the input parameter from this function. It does not make sense
         let remaining_data = take(&mut hash.remaining_data);
@@ -197,7 +197,7 @@ impl HashFunction for SHA1Hash {
         Self::update_hash(&mut hash_state, ctx, &input);
 
         // finish hashing by padding the remaining data within the hash state and digesting it
-        Self::finish_hash(&mut hash_state, ctx, &vec![]);
+        Self::finish_hash(&mut hash_state, ctx);
 
         hash_state.hash
     }

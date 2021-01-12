@@ -162,7 +162,7 @@ impl HashFunction for MD5Hash {
     /// `input` the input array that shall be padded and applied. It can be longer than one block,
     /// all full blocks prefixing the array will be omitted.
     #[allow(clippy::cast_possible_truncation)]
-    fn finish_hash(hash: &mut Self::HashState, _ctx: &Self::Context, input: &[u8]) -> Self::HashData {
+    fn finish_hash(hash: &mut Self::HashState, _ctx: &Self::Context) -> Self::HashData {
         let remaining_data = &hash.remaining_data;
 
         let mut last_block = [0_u8; BLOCK_LENGTH_BYTES];
@@ -209,7 +209,7 @@ impl HashFunction for MD5Hash {
         Self::update_hash(&mut hash_state, ctx, &input);
 
         // pad and digest last block
-        Self::finish_hash(&mut hash_state, ctx, &vec![])
+        Self::finish_hash(&mut hash_state, ctx)
     }
 }
 
