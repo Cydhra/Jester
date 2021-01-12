@@ -5,6 +5,7 @@ use std::mem;
 use std::mem::size_of;
 
 use crate::{align_to_u32a_le, BlockHashFunction, HashFunction, HashValue};
+use std::convert::TryInto;
 
 /// the hash block length in bytes
 const BLOCK_LENGTH_BYTES: usize = 64;
@@ -18,6 +19,12 @@ pub const INITIAL: MD5Hash = MD5Hash(0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325
 /// A tuple struct containing all four bytes of an MD5 Hash.
 #[derive(Debug, Copy, Clone)]
 pub struct MD5Hash(pub u32, pub u32, pub u32, pub u32);
+
+pub struct MD5HashState {
+    hash: MD5Hash,
+    message_length: u64,
+    remaining_data: Vec<u8>,
+}
 
 /// bits rotated per round
 static ROUND_ROTATION_COUNT: [u32; 64] = [
@@ -38,13 +45,67 @@ static MAGIC_SINUS_SCALARS: [u32; 64] = [
     0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
 ];
 
+fn round_function(hash: &mut MD5HashState, input: &[u8; BLOCK_LENGTH_BYTES]) {
+    let mut input_block = [0_u32; BLOCK_LENGTH_DOUBLE_WORDS];
+    unsafe { align_to_u32a_le(&mut input_block, input) };
+
+    let mut round_state = hash.hash;
+
+    for i in 0..BLOCK_LENGTH_BYTES {
+        let (scrambled_data, message_index) = match i {
+            0..=15 => (
+                round_state.3 ^ (round_state.1 & (round_state.2 ^ round_state.3)),
+                i,
+            ),
+            16..=31 => (
+                round_state.2 ^ (round_state.3 & (round_state.1 ^ round_state.2)),
+                (5 * i + 1) % BLOCK_LENGTH_DOUBLE_WORDS,
+            ),
+            32..=47 => (
+                (round_state.1 ^ round_state.2 ^ round_state.3),
+                (3 * i + 5) % BLOCK_LENGTH_DOUBLE_WORDS,
+            ),
+            48..=63 => (
+                (round_state.2 ^ (round_state.1 | !round_state.3)),
+                (7 * i) % BLOCK_LENGTH_DOUBLE_WORDS,
+            ),
+            _ => unreachable!(),
+        };
+
+        let temp = round_state.3;
+        round_state.3 = round_state.2;
+        round_state.2 = round_state.1;
+        round_state.1 = round_state.1.wrapping_add(u32::rotate_left(
+            round_state
+                .0
+                .wrapping_add(scrambled_data)
+                .wrapping_add(MAGIC_SINUS_SCALARS[i])
+                .wrapping_add(input_block[message_index]),
+            ROUND_ROTATION_COUNT[i],
+        ));
+        round_state.0 = temp;
+    }
+
+    hash.hash.0 = hash.hash.0.wrapping_add(round_state.0);
+    hash.hash.1 = hash.hash.1.wrapping_add(round_state.1);
+    hash.hash.2 = hash.hash.2.wrapping_add(round_state.2);
+    hash.hash.3 = hash.hash.3.wrapping_add(round_state.3);
+
+    if hash.message_length as u128 + 64_u128 * 8 > u64::MAX as u128 {
+        // todo maybe throw an error here?
+        panic!("cannot hash more than 2**64 - 1 bits.")
+    } else {
+        hash.message_length += 64 * 8
+    }
+}
+
 impl HashFunction for MD5Hash {
     type Context = ();
-    type HashState = MD5Hash;
+    type HashState = MD5HashState;
     type HashData = MD5Hash;
 
     fn init_hash(_ctx: &Self::Context) -> Self::HashState {
-        INITIAL
+        MD5HashState { hash: INITIAL, message_length: 0, remaining_data: vec![] }
     }
 
     /// Compute one round of the MD5 hash function.
@@ -56,52 +117,42 @@ impl HashFunction for MD5Hash {
     /// # Returns
     /// A new `MD5HashState` computed from the input state and the input data block.
     fn update_hash(hash: &mut Self::HashState, _ctx: &Self::Context, input: &[u8]) {
-        assert_eq!(input.len(), BLOCK_LENGTH_BYTES);
+        // offset of input data that is already processed during the use of the remaining data
+        // stored in the state
+        let mut input_data_offset = 0;
 
-        let mut input_block = [0_u32; BLOCK_LENGTH_DOUBLE_WORDS];
-        unsafe { align_to_u32a_le(&mut input_block, input) };
+        // digest remaining data from the state, if any and copy a prefix from input data that
+        if !hash.remaining_data.is_empty() {
+            // fills one block of data
+            if hash.remaining_data.len() + input.len() >= BLOCK_LENGTH_BYTES {
+                // move the remaining data outside the buffer and append new input data to fill
+                // first block
+                input_data_offset = hash.remaining_data.len();
 
-        let mut round_state = *hash;
+                let mut first_block = [0u8; BLOCK_LENGTH_BYTES];
+                first_block[..input_data_offset].copy_from_slice(&hash.remaining_data);
+                first_block[input_data_offset..].copy_from_slice(&input[..input_data_offset]);
 
-        for i in 0..BLOCK_LENGTH_BYTES {
-            let (scrambled_data, message_index) = match i {
-                0..=15 => (
-                    round_state.3 ^ (round_state.1 & (round_state.2 ^ round_state.3)),
-                    i,
-                ),
-                16..=31 => (
-                    round_state.2 ^ (round_state.3 & (round_state.1 ^ round_state.2)),
-                    (5 * i + 1) % BLOCK_LENGTH_DOUBLE_WORDS,
-                ),
-                32..=47 => (
-                    (round_state.1 ^ round_state.2 ^ round_state.3),
-                    (3 * i + 5) % BLOCK_LENGTH_DOUBLE_WORDS,
-                ),
-                48..=63 => (
-                    (round_state.2 ^ (round_state.1 | !round_state.3)),
-                    (7 * i) % BLOCK_LENGTH_DOUBLE_WORDS,
-                ),
-                _ => unreachable!(),
-            };
-
-            let temp = round_state.3;
-            round_state.3 = round_state.2;
-            round_state.2 = round_state.1;
-            round_state.1 = round_state.1.wrapping_add(u32::rotate_left(
-                round_state
-                    .0
-                    .wrapping_add(scrambled_data)
-                    .wrapping_add(MAGIC_SINUS_SCALARS[i])
-                    .wrapping_add(input_block[message_index]),
-                ROUND_ROTATION_COUNT[i],
-            ));
-            round_state.0 = temp;
+                // hash first block
+                round_function(hash, &first_block);
+            } else { // else copy the input data into the vec and wait for more data
+                hash.remaining_data.append(&mut input.to_vec());
+                return;
+            }
         }
 
-        hash.0 = hash.0.wrapping_add(round_state.0);
-        hash.1 = hash.1.wrapping_add(round_state.1);
-        hash.2 = hash.2.wrapping_add(round_state.2);
-        hash.3 = hash.3.wrapping_add(round_state.3);
+        // calculate how many full blocks remain in the input buffer
+        let message_blocks_count = (input.len() - input_data_offset) / BLOCK_LENGTH_BYTES;
+
+        // digest full blocks
+        for i in 0..message_blocks_count {
+            round_function(hash, &input[input_data_offset + i * BLOCK_LENGTH_BYTES..
+                input_data_offset + (i + 1) * BLOCK_LENGTH_BYTES].try_into().unwrap())
+        }
+
+        // copy remaining data into hash state
+        let remaining_data = &input[message_blocks_count * BLOCK_LENGTH_BYTES..];
+        hash.remaining_data = remaining_data.to_vec();
     }
 
     /// Apply padding to the last incomplete block and digest it. May digest two blocks, if the
@@ -111,24 +162,27 @@ impl HashFunction for MD5Hash {
     /// `input` the input array that shall be padded and applied. It can be longer than one block,
     /// all full blocks prefixing the array will be omitted.
     #[allow(clippy::cast_possible_truncation)]
-    fn finish_hash(hash: &mut Self::HashState, ctx: &Self::Context, input: &[u8]) -> Self::HashData {
-        let message_length_bits: u64 = (input.len() as u64) * 8_u64;
-        let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
-
-        let relevant_data = &input[message_blocks_count * BLOCK_LENGTH_BYTES..];
+    fn finish_hash(hash: &mut Self::HashState, _ctx: &Self::Context, input: &[u8]) -> Self::HashData {
+        let remaining_data = &hash.remaining_data;
 
         let mut last_block = [0_u8; BLOCK_LENGTH_BYTES];
-        // append the last part of message to the block
-        for (dst, src) in last_block.iter_mut().zip(relevant_data.iter()) {
-            *dst = *src
-        }
+        last_block[..remaining_data.len()].copy_from_slice(&remaining_data[..]);
+
+        let message_length_bits =
+            if hash.message_length as u128 +
+                remaining_data.len() as u128 * 8_u128 > u64::MAX as u128 {
+                // todo maybe throw an error here?
+                panic!("cannot hash more than 2**64 - 1 bits.")
+            } else {
+                hash.message_length + (remaining_data.len() * 8) as u64
+            };
 
         // append a single 1-bit to the end of the message
-        last_block[relevant_data.len()] = 0x80_u8;
+        last_block[remaining_data.len()] = 0x80_u8;
 
         // if there is not enough space for the message length to be appended, a new block must be
         // created
-        if relevant_data.len() + 1 + size_of::<u64>() > BLOCK_LENGTH_BYTES {
+        if remaining_data.len() + 1 + size_of::<u64>() > BLOCK_LENGTH_BYTES {
             let mut overflow_block = [0_u8; BLOCK_LENGTH_BYTES];
             // append the message length in bits
             for i in 0..8 {
@@ -136,33 +190,26 @@ impl HashFunction for MD5Hash {
                     (message_length_bits >> (i * 8) as u64) as u8;
             }
 
-            Self::update_hash(hash, ctx, &last_block);
-            Self::update_hash(hash, ctx, &overflow_block);
+            round_function(hash, &last_block);
+            round_function(hash, &overflow_block);
         } else {
             // append the message length in bits
             for i in 0..8 {
                 last_block[56 + i] = (message_length_bits >> (i * 8) as u64) as u8;
             }
 
-            Self::update_hash(hash, ctx, &last_block);
+            round_function(hash, &last_block);
         }
 
-        hash.clone()
+        hash.hash
     }
 
     fn digest_message(ctx: &Self::Context, input: &[u8]) -> Self::HashData {
         let mut hash_state = Self::init_hash(ctx);
-        let message_blocks_count = input.len() / BLOCK_LENGTH_BYTES;
-
-        // digest full blocks
-        for block_index in 0..message_blocks_count {
-            Self::update_hash(&mut hash_state, ctx,
-                              &input[block_index * BLOCK_LENGTH_BYTES..(block_index + 1) * BLOCK_LENGTH_BYTES],
-            );
-        }
+        Self::update_hash(&mut hash_state, ctx, &input);
 
         // pad and digest last block
-        Self::finish_hash(&mut hash_state, ctx, input)
+        Self::finish_hash(&mut hash_state, ctx, &vec![])
     }
 }
 
