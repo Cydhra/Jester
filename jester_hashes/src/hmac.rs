@@ -1,4 +1,4 @@
-use crate::{BlockHashFunction, HashFunction, HashFunctionObsolete, HashValue};
+use crate::{BlockHashFunction, HashValue};
 
 /// Generate a keyed-hash message authentication code from a `HashFunction` and a given key using the HMAC protocol
 /// of RFC 2104.
@@ -48,7 +48,6 @@ fn pad(key: &[u8], length: usize) -> Box<[u8]> {
 #[cfg(test)]
 mod tests {
     use crate::md5::MD5Hash;
-    use crate::sha1::SHA1Hash;
 
     use super::hmac;
 

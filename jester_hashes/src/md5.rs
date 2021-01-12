@@ -4,7 +4,7 @@
 use std::mem;
 use std::mem::size_of;
 
-use crate::{align_to_u32a_le, BlockHashFunction, HashFunction, HashFunctionObsolete, HashValue};
+use crate::{align_to_u32a_le, BlockHashFunction, HashFunction, HashValue};
 
 /// the hash block length in bytes
 const BLOCK_LENGTH_BYTES: usize = 64;
@@ -43,7 +43,7 @@ impl HashFunction for MD5Hash {
     type HashState = MD5Hash;
     type HashData = MD5Hash;
 
-    fn init_hash(ctx: &Self::Context) -> Self::HashState {
+    fn init_hash(_ctx: &Self::Context) -> Self::HashState {
         INITIAL
     }
 
@@ -55,7 +55,7 @@ impl HashFunction for MD5Hash {
     ///
     /// # Returns
     /// A new `MD5HashState` computed from the input state and the input data block.
-    fn update_hash(hash: &mut Self::HashState, ctx: &Self::Context, input: &[u8]) {
+    fn update_hash(hash: &mut Self::HashState, _ctx: &Self::Context, input: &[u8]) {
         assert_eq!(input.len(), BLOCK_LENGTH_BYTES);
 
         let mut input_block = [0_u32; BLOCK_LENGTH_DOUBLE_WORDS];

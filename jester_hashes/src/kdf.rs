@@ -3,7 +3,7 @@
 use std::f64;
 use std::ops::Deref;
 
-use crate::{BlockHashFunction, HashFunction, HashFunctionObsolete};
+use crate::BlockHashFunction;
 use crate::hmac::hmac;
 
 /// HMAC based key derivation function. A key of length `output_length` is generated.

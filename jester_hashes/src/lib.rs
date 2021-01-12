@@ -157,17 +157,17 @@ show them the serenity of the void.";
     #[test]
     fn test_sha1() {
         assert_eq!(
-            hex::encode(&SHA1Hash::digest_message(EMPTY_MESSAGE.as_bytes()).raw()),
+            hex::encode(&SHA1Hash::digest_message(&(),EMPTY_MESSAGE.as_bytes()).raw()),
             "da39a3ee5e6b4b0d3255bfef95601890afd80709"
         );
 
         assert_eq!(
-            hex::encode(&SHA1Hash::digest_message(SOME_TEXT.as_bytes()).raw()),
+            hex::encode(&SHA1Hash::digest_message(&(),SOME_TEXT.as_bytes()).raw()),
             "931bec5eec465b2e742deafbdcae2681820a4ac9"
         );
 
         assert_eq!(
-            hex::encode(&SHA1Hash::digest_message(LONG_TEXT.as_bytes()).raw()),
+            hex::encode(&SHA1Hash::digest_message(&(),LONG_TEXT.as_bytes()).raw()),
             "3f7febf27a733691542c1ac367f2d2692f47c24f"
         );
     }

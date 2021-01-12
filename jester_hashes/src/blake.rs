@@ -2,10 +2,9 @@
 
 use std::convert::TryInto;
 use std::mem;
-use std::mem::size_of;
 
-use num::{PrimInt, ToPrimitive};
-use num::traits::{AsPrimitive, WrappingAdd};
+use num::PrimInt;
+use num::traits::WrappingAdd;
 
 use crate::HashFunctionObsolete;
 
