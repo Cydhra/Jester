@@ -87,7 +87,6 @@ pub trait HashFunction {
 
 /// A special hash function that consumes input in blocks of uniform size.
 pub trait BlockHashFunction: HashFunction {
-
     /// Obtain the block size this hash consumes given the specified context.
     fn block_size(ctx: &Self::Context) -> usize;
 
@@ -128,47 +127,44 @@ mod tests {
 
     const SOME_TEXT: &str = "a-very-long-message-that-can-be-digested-at-once";
 
-    const LONG_TEXT: &str = "God? You'd assert that a God exhibits neither shame nor despair. And yet I stand unchanged; \
-a tragic husk with bloodied hands. I surrendered my future, the prospect of a family to carry your poison. \
-You misled me. I renounce your control! \
-Fidelity has always been your greatest quality, Ragnier. I swear to you to my son, all of your shame and guilt, \
-all of your sins, they will collapse into the abyss we all race towards. Share that truth with the world, share it \
-with the provinces and the valley and the empires in the west. Show them your conviction, \
-show them the serenity of the void.";
+    const LONG_TEXT: &str = "And Ion held six fingers aloft and upon their spears did the \
+soldiers impale themselves. \"For you!\" they cried before the blood drowned their tongues. \
+And Ion said, \"Now do you see?\" And Nadox wept, as more did skewer themselves in Ion's name, \
+for he had seen and now knew the truth of his words.";
 
     #[test]
     fn test_md5() {
         assert_eq!(
-            hex::encode(&MD5Hash::digest_message(&(),EMPTY_MESSAGE.as_bytes()).raw()),
+            hex::encode(&MD5Hash::digest_message(&(), EMPTY_MESSAGE.as_bytes()).raw()),
             "d41d8cd98f00b204e9800998ecf8427e"
         );
 
         assert_eq!(
-            hex::encode(&MD5Hash::digest_message(&(),SOME_TEXT.as_bytes()).raw()),
+            hex::encode(&MD5Hash::digest_message(&(), SOME_TEXT.as_bytes()).raw()),
             "9cf653b21b12797c80f769c8a753c360"
         );
 
         assert_eq!(
-            hex::encode(&MD5Hash::digest_message(&(),LONG_TEXT.as_bytes()).raw()),
-            "b3e7bf1f1a433eae2001458324ccb2e8"
+            hex::encode(&MD5Hash::digest_message(&(), LONG_TEXT.as_bytes()).raw()),
+            "fd87f4b9821fe2223f006c3495324541"
         );
     }
 
     #[test]
     fn test_sha1() {
         assert_eq!(
-            hex::encode(&SHA1Hash::digest_message(&(),EMPTY_MESSAGE.as_bytes()).raw()),
+            hex::encode(&SHA1Hash::digest_message(&(), EMPTY_MESSAGE.as_bytes()).raw()),
             "da39a3ee5e6b4b0d3255bfef95601890afd80709"
         );
 
         assert_eq!(
-            hex::encode(&SHA1Hash::digest_message(&(),SOME_TEXT.as_bytes()).raw()),
+            hex::encode(&SHA1Hash::digest_message(&(), SOME_TEXT.as_bytes()).raw()),
             "931bec5eec465b2e742deafbdcae2681820a4ac9"
         );
 
         assert_eq!(
-            hex::encode(&SHA1Hash::digest_message(&(),LONG_TEXT.as_bytes()).raw()),
-            "3f7febf27a733691542c1ac367f2d2692f47c24f"
+            hex::encode(&SHA1Hash::digest_message(&(), LONG_TEXT.as_bytes()).raw()),
+            "ae410e98987c6543498833540e93dd7129fc8e0b"
         );
     }
 
