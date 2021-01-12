@@ -123,7 +123,7 @@ impl HashFunction for SHA1Hash {
                 round_function(hash, &first_block);
             } else { // else copy the input data into the vec and wait for more data
                 hash.remaining_data.append(&mut input.to_vec());
-                input_data_offset = input.len()
+                return;
             }
         }
 
