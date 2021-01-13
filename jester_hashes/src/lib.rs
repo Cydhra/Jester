@@ -94,27 +94,6 @@ pub trait BlockHashFunction: HashFunction {
     fn output_size(ctx: &Self::Context) -> usize;
 }
 
-/// Any hash function that can digest arbitrarily sized input.
-pub trait HashFunctionObsolete {
-    /// The digestion block size of this hash function
-    const BLOCK_SIZE: usize;
-
-    /// The size of the output hash state
-    const OUTPUT_SIZE: usize;
-
-    /// Digest a full message of arbitrary size.
-    /// # Parameters
-    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
-    ///
-    /// # Returns
-    /// Returns the hash state of the digested input data. No assumptions can be made about whether the state can be
-    /// used for further operations in the hash algorithm.
-    fn digest_message(input: &[u8]) -> Self;
-
-    /// Convert the type-safe hash object into a raw slice of unsigned bytes.
-    fn raw(&self) -> Box<[u8]>;
-}
-
 #[cfg(test)]
 mod tests {
     use hex;

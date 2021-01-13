@@ -6,8 +6,6 @@ use std::mem;
 use num::PrimInt;
 use num::traits::WrappingAdd;
 
-use crate::HashFunctionObsolete;
-
 const BLOCK_LENGTH_BYTES: usize = 128;
 
 /// Blake2 round permutation matrix. In round i row i mod 10 is used to permute the input block.
@@ -198,29 +196,5 @@ impl Blake2bHash {
     /// Digest the last (partial) block of input data.
     pub fn digest_last_block(&mut self, input: &[u8]) {
         unimplemented!()
-    }
-}
-
-impl HashFunctionObsolete for Blake2bHash {
-    const BLOCK_SIZE: usize = BLOCK_LENGTH_BYTES;
-
-    const OUTPUT_SIZE: usize = mem::size_of::<Self>();
-
-    /// Digest a full message of arbitrary size.
-    /// # Parameters
-    /// - `input` a slice containing a (possibly large) chunk of byte data that is to be digested.
-    ///
-    /// # Returns
-    /// Returns the hash state of the digested input data. It cannot be used to append more data, as the message
-    /// length was appended to the input data for digestion.
-    fn digest_message(input: &[u8]) -> Self {
-        unimplemented!()
-    }
-
-    /// Generates a raw `[u8; 64]` array from the current hash state.
-    fn raw(&self) -> Box<[u8]> {
-        unsafe { mem::transmute::<[u64; 8], [u8; 64]>(self.0) }
-            .to_vec()
-            .into()
     }
 }
