@@ -127,12 +127,12 @@ impl HashFunction for MD5Hash {
             if hash.remaining_data.len() + input.len() >= BLOCK_LENGTH_BYTES {
                 // move the remaining data outside the buffer and append new input data to fill
                 // first block
-                input_data_offset = hash.remaining_data.len();
+                input_data_offset = BLOCK_LENGTH_BYTES - hash.remaining_data.len();
 
                 let mut first_block = [0u8; BLOCK_LENGTH_BYTES];
-                first_block[..input_data_offset].copy_from_slice(&hash.remaining_data);
-                first_block[input_data_offset..]
-                    .copy_from_slice(&input[..(BLOCK_LENGTH_BYTES - input_data_offset)]);
+                first_block[..hash.remaining_data.len()].copy_from_slice(&hash.remaining_data);
+                first_block[hash.remaining_data.len()..]
+                    .copy_from_slice(&input[..input_data_offset]);
 
                 // hash first block
                 round_function(hash, &first_block);
