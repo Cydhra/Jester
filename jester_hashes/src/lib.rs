@@ -122,6 +122,7 @@ mod tests {
     use super::*;
     use super::md5::MD5Hash;
     use super::sha1::SHA1Hash;
+    use std::ptr::hash;
 
     const EMPTY_MESSAGE: &str = "";
 
@@ -131,6 +132,27 @@ mod tests {
 soldiers impale themselves. \"For you!\" they cried before the blood drowned their tongues. \
 And Ion said, \"Now do you see?\" And Nadox wept, as more did skewer themselves in Ion's name, \
 for he had seen and now knew the truth of his words.";
+
+    const STREAM_TEXT: [&str; 3] = [
+        "Then Ion called the Klavigar to Him, and together they sat for a time within the heart \
+of the Leviathan. They spoke of many things, of the darkness to come, and of the Fall. \
+For the Ozirmok knew of what would befall them all at Kythera.\
+",
+
+        "And, in turn, He bade each of them to go forth and set in motion the beginning of the \
+Great Plan. To Orok and to his disciple Halyna Ieva, He bade them to create the \
+beginnings of a great force, one to rival that of the halkostana, but to do so in secret. \
+To Lovataar and her disciple Kalakaran, to study the root of small things, to understand \
+unto even the base of life itself. To learn all there was to know of how to spread the \
+Flesh.\
+",
+
+        "To Saarn and her disciple Naman, He bade to study life itself, how to consume more than \
+merely the flesh, but to study the vitality of the soul. And finally, onto Nadox and his \
+disciple Zhizao, He laid the heaviest burden. To carry the weight of the Nalmasak, that \
+which was His Holy Word. To bring forth His vision, to make it manifest in the world \
+after He was gone."
+    ];
 
     #[test]
     fn test_md5() {
@@ -151,6 +173,18 @@ for he had seen and now knew the truth of his words.";
     }
 
     #[test]
+    fn test_md5_stream() {
+        let ctx = ();
+        let mut hash_state = MD5Hash::init_hash(&ctx);
+        MD5Hash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[0].as_bytes());
+        MD5Hash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[1].as_bytes());
+        MD5Hash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[2].as_bytes());
+
+        let hash = MD5Hash::finish_hash(&mut hash_state, &ctx);
+        assert_eq!(hex::encode(hash.raw()), "a452e0c968f6ca586481f051e84d68c2");
+    }
+
+    #[test]
     fn test_sha1() {
         assert_eq!(
             hex::encode(&SHA1Hash::digest_message(&(), EMPTY_MESSAGE.as_bytes()).raw()),
@@ -166,6 +200,18 @@ for he had seen and now knew the truth of his words.";
             hex::encode(&SHA1Hash::digest_message(&(), LONG_TEXT.as_bytes()).raw()),
             "ae410e98987c6543498833540e93dd7129fc8e0b"
         );
+    }
+
+    #[test]
+    fn test_sha1_stream() {
+        let ctx = ();
+        let mut hash_state = SHA1Hash::init_hash(&ctx);
+        SHA1Hash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[0].as_bytes());
+        SHA1Hash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[1].as_bytes());
+        SHA1Hash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[2].as_bytes());
+
+        let hash = SHA1Hash::finish_hash(&mut hash_state, &ctx);
+        assert_eq!(hex::encode(hash.raw()), "4b30dc7e3c23cf8250f0ddbec489c64d8c7ce75b");
     }
 
     #[test]
