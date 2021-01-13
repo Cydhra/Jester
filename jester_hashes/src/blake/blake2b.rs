@@ -80,6 +80,10 @@ impl HashFunction for Blake2bHash {
                 block[hash.remaining_data_length..]
                     .copy_from_slice(&input[..input_data_offset]);
 
+                // update message length by a block
+                hash.message_length += BLAKE_2B_BLOCK_SIZE as u128;
+
+                // compress the new block
                 blake2b_compress(hash, &block, false);
 
                 hash.remaining_data_length = 0;
@@ -95,6 +99,10 @@ impl HashFunction for Blake2bHash {
         // compress full blocks from the input buffer except the last one
         let block_count = (input.len() - input_data_offset) / BLAKE_2B_BLOCK_SIZE;
         for i in 0..block_count - 1 {
+            // update message length by a block
+            hash.message_length += BLAKE_2B_BLOCK_SIZE as u128;
+
+            // compress the next block
             blake2b_compress(
                 hash,
                 &input[input_data_offset + i * BLAKE_2B_BLOCK_SIZE..
@@ -106,6 +114,10 @@ impl HashFunction for Blake2bHash {
         // if there is more data in the input buffer, the last full block is not the last block
         // of the algorithm and can therefore be compressed safely
         if input_data_offset + block_count * BLAKE_2B_BLOCK_SIZE < input.len() {
+            // update message length by a block
+            hash.message_length += BLAKE_2B_BLOCK_SIZE as u128;
+
+            // compress the last block
             blake2b_compress(
                 hash,
                 &input[input_data_offset + (block_count - 1) * BLAKE_2B_BLOCK_SIZE..
@@ -183,13 +195,6 @@ fn blake2b_compress(state: &mut Blake2bState, input: &[u8; 128], last_block: boo
     let mut vector: [u64; 16] = [0; 16];
     vector[0..=7].copy_from_slice(&state.hash.0[..]);
     vector[8..=15].copy_from_slice(&INITIAL_2B.0[..]);
-
-    // add message length
-    if state.message_length.wrapping_add(BLAKE_2B_BLOCK_SIZE as u128) > state.message_length {
-        state.message_length += BLAKE_2B_BLOCK_SIZE as u128;
-    } else {
-        panic!("blake2b cannot hash more than 2**128-1 bytes")
-    }
 
     vector[12] ^= state.message_length as u64;
     vector[13] ^= (state.message_length >> 64) as u64;
