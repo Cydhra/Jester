@@ -39,3 +39,33 @@ fn blake2_mix<N: WrappingAdd + PrimInt, const R1: u8, const R2: u8, const R3: u8
     vector[c] = vector[c].wrapping_add(&vector[d]);
     vector[b] = (vector[b] ^ vector[c]).rotate_right(R4.try_into().unwrap());
 }
+
+#[cfg(test)]
+pub(crate) mod blake2_tests {
+    use crate::blake::blake2b::{Blake2bHash, Blake2bContext};
+    use crate::{HashFunction, HashValue};
+    use crate::tests::{EMPTY_MESSAGE, SOME_TEXT, LONG_TEXT};
+
+    #[test]
+    fn blake2b_tests() {
+        let ctx = Blake2bContext {
+            output_len: 64,
+            key: vec![]
+        };
+
+        assert_eq!(
+            hex::encode(&Blake2bHash::digest_message(&ctx, EMPTY_MESSAGE.as_bytes()).raw()),
+            "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce"
+        );
+
+        assert_eq!(
+            hex::encode(&Blake2bHash::digest_message(&ctx, SOME_TEXT.as_bytes()).raw()),
+            "fc918cde2b169d192d19438620f2a9b1d1d4cce16dc8b8e8600377a577a74ace2a65a21f1cb3d3f0e3abf97e88d804e8aa4d674df143e7070976018e2ae9060f"
+        );
+
+        assert_eq!(
+            hex::encode(&Blake2bHash::digest_message(&ctx, LONG_TEXT.as_bytes()).raw()),
+            "ef403f8bd8f4f821376cf108e5004c78df3b7a99d198c166c7b8d1e6a409e10312bc273e3299a755b2cf75a5db85222266dd77215f80340363359656c621bf69"
+        );
+    }
+}

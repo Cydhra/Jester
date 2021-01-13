@@ -95,7 +95,7 @@ pub trait BlockHashFunction: HashFunction {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use hex;
 
     use super::*;
@@ -103,16 +103,16 @@ mod tests {
     use super::sha1::SHA1Hash;
     use std::ptr::hash;
 
-    const EMPTY_MESSAGE: &str = "";
+    pub const EMPTY_MESSAGE: &str = "";
 
-    const SOME_TEXT: &str = "a-very-long-message-that-can-be-digested-at-once";
+    pub const SOME_TEXT: &str = "a-very-long-message-that-can-be-digested-at-once";
 
-    const LONG_TEXT: &str = "And Ion held six fingers aloft and upon their spears did the \
+    pub const LONG_TEXT: &str = "And Ion held six fingers aloft and upon their spears did the \
 soldiers impale themselves. \"For you!\" they cried before the blood drowned their tongues. \
 And Ion said, \"Now do you see?\" And Nadox wept, as more did skewer themselves in Ion's name, \
 for he had seen and now knew the truth of his words.";
 
-    const STREAM_TEXT: [&str; 3] = [
+    pub const STREAM_TEXT: [&str; 3] = [
         "Then Ion called the Klavigar to Him, and together they sat for a time within the heart \
 of the Leviathan. They spoke of many things, of the darkness to come, and of the Fall. For the \
 Ozirmok knew of what would befall them all at Kythera. ",
