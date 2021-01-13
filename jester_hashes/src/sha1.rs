@@ -117,7 +117,8 @@ impl HashFunction for SHA1Hash {
 
                 let mut first_block = [0u8; BLOCK_LENGTH_BYTES];
                 first_block[..input_data_offset].copy_from_slice(&hash.remaining_data);
-                first_block[input_data_offset..].copy_from_slice(&input[..input_data_offset]);
+                first_block[input_data_offset..]
+                    .copy_from_slice(&input[..(BLOCK_LENGTH_BYTES - input_data_offset)]);
 
                 // hash first block
                 round_function(hash, &first_block);
@@ -137,7 +138,7 @@ impl HashFunction for SHA1Hash {
         }
 
         // copy remaining data into hash state
-        let remaining_data = &input[message_blocks_count * BLOCK_LENGTH_BYTES..];
+        let remaining_data = &input[input_data_offset + message_blocks_count * BLOCK_LENGTH_BYTES..];
         hash.remaining_data = remaining_data.to_vec();
     }
 
