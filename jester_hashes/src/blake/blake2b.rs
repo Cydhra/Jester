@@ -26,8 +26,8 @@ pub const BLAKE_2B_BLOCK_SIZE: usize = 128;
 pub struct Blake2bHash([u64; 8]);
 
 pub struct Blake2bContext {
-    output_len: usize,
-    key: Vec<u8>,
+    pub output_len: usize,
+    pub key: Vec<u8>,
 }
 
 pub struct Blake2bState {
@@ -89,6 +89,7 @@ impl HashFunction for Blake2bHash {
                 hash.remaining_data_length + input.len()]
                 .copy_from_slice(&input[..]);
             hash.remaining_data_length += input.len();
+            return;
         }
 
         // compress full blocks from the input buffer except the last one
