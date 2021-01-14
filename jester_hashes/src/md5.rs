@@ -226,7 +226,7 @@ impl BlockHashFunction for MD5Hash {
 
 impl HashValue for MD5Hash {
     /// Generates a raw `[u8; 16]` array from the current hash state.
-    fn raw(&self) -> Box<[u8]> {
+    fn raw(&self) -> Vec<u8> {
         unsafe {
             mem::transmute::<[u32; 4], [u8; 16]>([
                 u32::from_le(self.0),
@@ -236,6 +236,5 @@ impl HashValue for MD5Hash {
             ])
         }
             .to_vec()
-            .into()
     }
 }

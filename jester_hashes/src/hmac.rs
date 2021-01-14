@@ -9,7 +9,7 @@ use crate::{BlockHashFunction, HashValue};
 ///
 /// #Outputs
 /// Returns a boxed slice containing the raw authentication code
-pub fn hmac<Hash, Context>(ctx: &Context, key: &[u8], message: &[u8]) -> Box<[u8]>
+pub fn hmac<Hash, Context>(ctx: &Context, key: &[u8], message: &[u8]) -> Vec<u8>
     where Hash: BlockHashFunction<Context=Context>,
 {
     let block_size = Hash::block_size(ctx);
@@ -39,10 +39,10 @@ pub fn hmac<Hash, Context>(ctx: &Context, key: &[u8], message: &[u8]) -> Box<[u8
     Hash::digest_message(ctx, &outer_message).raw()
 }
 
-fn pad(key: &[u8], length: usize) -> Box<[u8]> {
+fn pad(key: &[u8], length: usize) -> Vec<u8> {
     let mut padded_vec = key.to_vec();
     padded_vec.extend_from_slice(&vec![0_u8; length - key.len()]);
-    padded_vec.into_boxed_slice()
+    padded_vec
 }
 
 #[cfg(test)]

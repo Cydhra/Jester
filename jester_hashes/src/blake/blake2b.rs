@@ -153,7 +153,7 @@ impl HashFunction for Blake2bHash {
 }
 
 impl HashValue for Blake2bHash {
-    fn raw(&self) -> Box<[u8]> {
+    fn raw(&self) -> Vec<u8> {
         unsafe {
             // TODO: do this properly
             mem::transmute::<[u64; 8], [u8; 64]>([
@@ -168,7 +168,6 @@ impl HashValue for Blake2bHash {
             ])
         }
             .to_vec()
-            .into()
     }
 }
 

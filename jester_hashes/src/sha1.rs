@@ -206,7 +206,7 @@ impl HashFunction for SHA1Hash {
 
 impl HashValue for SHA1Hash {
     /// Generates a raw `[u8; 20]` array from the current hash state.
-    fn raw(&self) -> Box<[u8]> {
+    fn raw(&self) -> Vec<u8> {
         unsafe {
             mem::transmute::<[u32; 5], [u8; 20]>([
                 u32::from_be(self.a),
@@ -217,7 +217,6 @@ impl HashValue for SHA1Hash {
             ])
         }
             .to_vec()
-            .into()
     }
 }
 

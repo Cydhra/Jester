@@ -48,7 +48,7 @@ pub(crate) unsafe fn align_to_u32a_be(dest: &mut [u32], source: &[u8]) {
 /// Output of a `HashFunction`.
 pub trait HashValue {
     /// Obtain the hash as a raw byte array.
-    fn raw(&self) -> Box<[u8]>;
+    fn raw(&self) -> Vec<u8>;
 }
 
 /// An implementation of a hashing algorithm. It defines three implementation dependent types,
