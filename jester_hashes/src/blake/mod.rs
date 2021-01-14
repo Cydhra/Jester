@@ -44,7 +44,7 @@ fn blake2_mix<N: WrappingAdd + PrimInt, const R1: u8, const R2: u8, const R3: u8
 #[cfg(test)]
 pub(crate) mod blake2_tests {
     use crate::{HashFunction, HashValue};
-    use crate::blake::blake2b::{Blake2bContext, Blake2bHash};
+    use crate::blake::blake2b::{Blake2bContext, Blake2b};
     use crate::tests::{EMPTY_MESSAGE, LONG_TEXT, SOME_TEXT, STREAM_TEXT};
 
     #[test]
@@ -55,17 +55,17 @@ pub(crate) mod blake2_tests {
         };
 
         assert_eq!(
-            hex::encode(&Blake2bHash::digest_message(&ctx, EMPTY_MESSAGE.as_bytes()).raw()),
+            hex::encode(&Blake2b::digest_message(&ctx, EMPTY_MESSAGE.as_bytes()).raw()),
             "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce"
         );
 
         assert_eq!(
-            hex::encode(&Blake2bHash::digest_message(&ctx, SOME_TEXT.as_bytes()).raw()),
+            hex::encode(&Blake2b::digest_message(&ctx, SOME_TEXT.as_bytes()).raw()),
             "fc918cde2b169d192d19438620f2a9b1d1d4cce16dc8b8e8600377a577a74ace2a65a21f1cb3d3f0e3abf97e88d804e8aa4d674df143e7070976018e2ae9060f"
         );
 
         assert_eq!(
-            hex::encode(&Blake2bHash::digest_message(&ctx, LONG_TEXT.as_bytes()).raw()),
+            hex::encode(&Blake2b::digest_message(&ctx, LONG_TEXT.as_bytes()).raw()),
             "ef403f8bd8f4f821376cf108e5004c78df3b7a99d198c166c7b8d1e6a409e10312bc273e3299a755b2cf75a5db85222266dd77215f80340363359656c621bf69"
         );
     }
@@ -73,12 +73,12 @@ pub(crate) mod blake2_tests {
     #[test]
     fn blake2b_stream_test() {
         let ctx = Blake2bContext { output_len: 64, key: vec![] };
-        let mut hash_state = Blake2bHash::init_hash(&ctx);
-        Blake2bHash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[0].as_bytes());
-        Blake2bHash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[1].as_bytes());
-        Blake2bHash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[2].as_bytes());
+        let mut hash_state = Blake2b::init_hash(&ctx);
+        Blake2b::update_hash(&mut hash_state, &ctx, STREAM_TEXT[0].as_bytes());
+        Blake2b::update_hash(&mut hash_state, &ctx, STREAM_TEXT[1].as_bytes());
+        Blake2b::update_hash(&mut hash_state, &ctx, STREAM_TEXT[2].as_bytes());
 
-        let hash = Blake2bHash::finish_hash(&mut hash_state, &ctx);
+        let hash = Blake2b::finish_hash(&mut hash_state, &ctx);
         assert_eq!(
             hex::encode(hash.raw()),
             "a78ebb4446b81ff6bb63f5767e6fefaa9f9d994c1c7384398c990ce48484f9f4399bcb9009221fcaecef66b41d1f1273f707848eb9773d3c0cd5afd3c5fcdf02"

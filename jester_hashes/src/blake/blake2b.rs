@@ -5,7 +5,7 @@ use crate::blake::{blake2_mix, SIGMA};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 /// The initial state for any blake2b hash. From here, all blocks are applied.
-pub const INITIAL_2B: Blake2bHash = Blake2bHash([
+pub const INITIAL_2B: [u64; 8] = [
     0x6A09E667F3BCC908,
     0xBB67AE8584CAA73B,
     0x3C6EF372FE94F82B,
@@ -14,15 +14,21 @@ pub const INITIAL_2B: Blake2bHash = Blake2bHash([
     0x9B05688C2B3E6C1F,
     0x1F83D9ABFB41BD6B,
     0x5BE0CD19137E2179,
-]);
+];
 
 pub const BLAKE_2B_WORD_LENGTH: usize = 64;
 pub const BLAKE_2B_ROUND_COUNT: usize = 12;
 pub const BLAKE_2B_BLOCK_SIZE: usize = 128;
 
-/// A Blake2b hash state. It consists out of 8 quad-words
-#[derive(Debug, Copy, Clone)]
-pub struct Blake2bHash([u64; 8]);
+/// A type for the Blake2b hash function. It does not carry actual data and exists solely for
+/// access to the function.
+pub struct Blake2b;
+
+/// A Blake2b hash output. It varies in length depending on the desired output length
+#[derive(Debug, Clone)]
+pub struct Blake2bHash {
+    pub hash: Vec<u8>,
+}
 
 pub struct Blake2bContext {
     pub output_len: usize,
@@ -30,13 +36,13 @@ pub struct Blake2bContext {
 }
 
 pub struct Blake2bState {
-    hash: Blake2bHash,
+    hash: [u64; 8],
     message_length: u128,
     remaining_data_buffer: [u8; BLAKE_2B_BLOCK_SIZE],
     remaining_data_length: usize,
 }
 
-impl HashFunction for Blake2bHash {
+impl HashFunction for Blake2b {
     type Context = Blake2bContext;
     type HashState = Blake2bState;
     type HashData = Blake2bHash;
@@ -50,7 +56,7 @@ impl HashFunction for Blake2bHash {
         };
 
         // parameter block
-        state.hash.0[0] ^= 0x0101_0000 ^ ((ctx.key.len() as u64) << 8) ^ ctx.output_len as u64;
+        state.hash[0] ^= 0x0101_0000 ^ ((ctx.key.len() as u64) << 8) ^ ctx.output_len as u64;
 
         // copy the key into the remaining data buffer and set the buffer to full. However, do
         // not compress yet: If no further data is hashed, this is considered the last block,
@@ -140,7 +146,7 @@ impl HashFunction for Blake2bHash {
         blake2b_compress(hash, &last_block, true);
 
         // TODO change output length according to context
-        hash.hash
+        Blake2bHash { hash: hash.raw().into_iter().take(ctx.output_len).collect() }
     }
 
     fn digest_message(ctx: &Self::Context, input: &[u8]) -> Self::HashData {
@@ -151,13 +157,19 @@ impl HashFunction for Blake2bHash {
     }
 }
 
-impl HashValue for Blake2bHash {
+impl HashValue for Blake2bState {
     fn raw(&self) -> Vec<u8> {
         let mut b = vec![];
         for i in 0..8 {
-            b.write_u64::<LittleEndian>(self.0[i]).unwrap();
+            b.write_u64::<LittleEndian>(self.hash[i]).unwrap();
         }
         b
+    }
+}
+
+impl HashValue for Blake2bHash {
+    fn raw(&self) -> Vec<u8> {
+        self.hash.clone()
     }
 }
 
@@ -169,8 +181,8 @@ fn blake2b_mix(vector: &mut [u64; 16], a: usize, b: usize, c: usize, d: usize, x
 fn blake2b_compress(state: &mut Blake2bState, input: &[u8; 128], last_block: bool) {
     // initialize local working vector
     let mut vector: [u64; 16] = [0; 16];
-    vector[0..=7].copy_from_slice(&state.hash.0[..]);
-    vector[8..=15].copy_from_slice(&INITIAL_2B.0[..]);
+    vector[0..=7].copy_from_slice(&state.hash[..]);
+    vector[8..=15].copy_from_slice(&INITIAL_2B[..]);
 
     vector[12] ^= state.message_length as u64;
     vector[13] ^= (state.message_length >> 64) as u64;
@@ -213,7 +225,7 @@ fn blake2b_compress(state: &mut Blake2bState, input: &[u8; 128], last_block: boo
     }
 
     for i in 0..8 {
-        state.hash.0[i] ^= vector[i] ^ vector[i + 8];
+        state.hash[i] ^= vector[i] ^ vector[i + 8];
     }
 }
 
