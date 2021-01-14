@@ -145,7 +145,6 @@ impl HashFunction for Blake2b {
 
         blake2b_compress(hash, &last_block, true);
 
-        // TODO change output length according to context
         Blake2bHash { hash: hash.raw().into_iter().take(ctx.output_len).collect() }
     }
 
