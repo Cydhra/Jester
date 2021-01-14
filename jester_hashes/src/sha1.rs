@@ -144,7 +144,6 @@ impl HashFunction for SHA1Hash {
 
     fn finish_hash(hash: &mut Self::HashState, _ctx: &Self::Context) ->
                                                                                    Self::HashData {
-        // TODO: remove the input parameter from this function. It does not make sense
         let remaining_data = take(&mut hash.remaining_data);
 
         // prepare a zero-padded full-length block
