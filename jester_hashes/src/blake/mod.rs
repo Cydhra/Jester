@@ -46,6 +46,7 @@ pub(crate) mod blake2_tests {
     use crate::{HashFunction, HashValue};
     use crate::blake::blake2b::{Blake2bContext, Blake2b};
     use crate::tests::{EMPTY_MESSAGE, LONG_TEXT, SOME_TEXT, STREAM_TEXT};
+    use crate::blake::blake2s::{Blake2s, Blake2sContext};
 
     #[test]
     fn blake2b_tests() {
@@ -120,6 +121,82 @@ pub(crate) mod blake2_tests {
                 ).raw()
             ),
             "3d363ff7401e02026f4a4687d4863ced"
+        );
+    }
+
+    #[test]
+    fn blake2s_tests() {
+        let ctx = Blake2sContext {
+            output_len: 32,
+            key: vec![],
+        };
+
+        assert_eq!(
+            hex::encode(&Blake2s::digest_message(&ctx, EMPTY_MESSAGE.as_bytes()).raw()),
+            "69217a3079908094e11121d042354a7c1f55b6482ca1a51e1b250dfd1ed0eef9"
+        );
+
+        assert_eq!(
+            hex::encode(&Blake2s::digest_message(&ctx, SOME_TEXT.as_bytes()).raw()),
+            "bc4885e85b2a36cbea9cdc4f11c2d532a3b551a5f2fb4516ac7d7d526f6abf9b"
+        );
+
+        assert_eq!(
+            hex::encode(&Blake2s::digest_message(&ctx, LONG_TEXT.as_bytes()).raw()),
+            "08e326307e3a5ec26308b887f4b4bffc45882f4e771768afc9f5b9ba812f6cb1"
+        );
+    }
+
+    #[test]
+    fn blake2s_stream_test() {
+        let ctx = Blake2sContext { output_len: 32, key: vec![] };
+        let mut hash_state = Blake2s::init_hash(&ctx);
+        Blake2s::update_hash(&mut hash_state, &ctx, STREAM_TEXT[0].as_bytes());
+        Blake2s::update_hash(&mut hash_state, &ctx, STREAM_TEXT[1].as_bytes());
+        Blake2s::update_hash(&mut hash_state, &ctx, STREAM_TEXT[2].as_bytes());
+
+        let hash = Blake2s::finish_hash(&mut hash_state, &ctx);
+        assert_eq!(
+            hex::encode(hash.raw()),
+            "47491576f075956e2e0420ae35e6b2258c24d22e70c2afecd9191a0d9eee39ee"
+        )
+    }
+
+    #[test]
+    fn blake2s_outsize_test() {
+        // example from pyblake2 documentation: https://pythonhosted.org/pyblake2/examples.html
+        assert_eq!(
+            hex::encode(
+                Blake2s::digest_message(
+                    &Blake2sContext { output_len: 10, key: vec![] },
+                    &vec![],
+                ).raw()
+            ),
+            "1bf21a98c78a1c376ae9"
+        );
+
+        assert_eq!(
+            hex::encode(
+                Blake2s::digest_message(
+                    &Blake2sContext { output_len: 11, key: vec![] },
+                    &vec![],
+                ).raw()
+            ),
+            "567004bf96e4a25773ebf4"
+        );
+    }
+
+    #[test]
+    fn blake2s_keyed_hash_test() {
+        // example from pyblake2 documentation: https://pythonhosted.org/pyblake2/examples.html
+        assert_eq!(
+            hex::encode(
+                Blake2s::digest_message(
+                    &Blake2sContext { output_len: 16, key: "pseudorandom key".as_bytes().to_vec() },
+                    &"message data".as_bytes(),
+                ).raw()
+            ),
+            "ea0078ad4910a6e5c411bc62dc84a8c7"
         );
     }
 }
