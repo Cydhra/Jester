@@ -106,11 +106,13 @@ pub(crate) mod tests {
 
     pub const SOME_TEXT: &str = "a-very-long-message-that-can-be-digested-at-once";
 
+    // text attribution: http://www.scpwiki.com/scp-2075 by Metaphysician
     pub const LONG_TEXT: &str = "And Ion held six fingers aloft and upon their spears did the \
 soldiers impale themselves. \"For you!\" they cried before the blood drowned their tongues. \
 And Ion said, \"Now do you see?\" And Nadox wept, as more did skewer themselves in Ion's name, \
 for he had seen and now knew the truth of his words.";
 
+    // text attribution: http://www.scpwiki.com/et-ecce by MalyceGraves
     pub const STREAM_TEXT: [&str; 3] = [
         "Then Ion called the Klavigar to Him, and together they sat for a time within the heart \
 of the Leviathan. They spoke of many things, of the darkness to come, and of the Fall. For the \

@@ -87,6 +87,7 @@ pub(crate) mod blake2_tests {
 
     #[test]
     fn blake2b_outsize_test() {
+        // example from pyblake2 documentation: https://pythonhosted.org/pyblake2/examples.html
         assert_eq!(
             hex::encode(
                 Blake2b::digest_message(
