@@ -43,7 +43,6 @@ impl HashFunction for Blake2bHash {
     type HashData = Blake2bHash;
 
     fn init_hash(ctx: &Self::Context) -> Self::HashState {
-        // TODO keyed hashing using context
         let mut state = Blake2bState {
             hash: INITIAL_2B,
             message_length: 0,
