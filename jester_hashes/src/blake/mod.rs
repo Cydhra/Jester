@@ -84,4 +84,27 @@ pub(crate) mod blake2_tests {
             "a78ebb4446b81ff6bb63f5767e6fefaa9f9d994c1c7384398c990ce48484f9f4399bcb9009221fcaecef66b41d1f1273f707848eb9773d3c0cd5afd3c5fcdf02"
         )
     }
+
+    #[test]
+    fn blake2b_outsize_test() {
+        assert_eq!(
+            hex::encode(
+                Blake2b::digest_message(
+                    &Blake2bContext { output_len: 10, key: vec![] },
+                    &vec![],
+                ).raw()
+            ),
+            "6fa1d8fcfd719046d762"
+        );
+
+        assert_eq!(
+            hex::encode(
+                Blake2b::digest_message(
+                    &Blake2bContext { output_len: 11, key: vec![] },
+                    &vec![],
+                ).raw()
+            ),
+            "eb6ec15daf9546254f0809"
+        );
+    }
 }
