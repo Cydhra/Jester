@@ -1,6 +1,7 @@
-use num::traits::WrappingAdd;
-use num::PrimInt;
 use std::convert::TryInto;
+
+use num::PrimInt;
+use num::traits::WrappingAdd;
 
 pub mod blake2b;
 pub mod blake2s;
@@ -42,15 +43,15 @@ fn blake2_mix<N: WrappingAdd + PrimInt, const R1: u8, const R2: u8, const R3: u8
 
 #[cfg(test)]
 pub(crate) mod blake2_tests {
-    use crate::blake::blake2b::{Blake2bHash, Blake2bContext};
     use crate::{HashFunction, HashValue};
-    use crate::tests::{EMPTY_MESSAGE, SOME_TEXT, LONG_TEXT};
+    use crate::blake::blake2b::{Blake2bContext, Blake2bHash};
+    use crate::tests::{EMPTY_MESSAGE, LONG_TEXT, SOME_TEXT, STREAM_TEXT};
 
     #[test]
     fn blake2b_tests() {
         let ctx = Blake2bContext {
             output_len: 64,
-            key: vec![]
+            key: vec![],
         };
 
         assert_eq!(
@@ -67,5 +68,20 @@ pub(crate) mod blake2_tests {
             hex::encode(&Blake2bHash::digest_message(&ctx, LONG_TEXT.as_bytes()).raw()),
             "ef403f8bd8f4f821376cf108e5004c78df3b7a99d198c166c7b8d1e6a409e10312bc273e3299a755b2cf75a5db85222266dd77215f80340363359656c621bf69"
         );
+    }
+
+    #[test]
+    fn blake2b_stream_test() {
+        let ctx = Blake2bContext { output_len: 64, key: vec![] };
+        let mut hash_state = Blake2bHash::init_hash(&ctx);
+        Blake2bHash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[0].as_bytes());
+        Blake2bHash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[1].as_bytes());
+        Blake2bHash::update_hash(&mut hash_state, &ctx, STREAM_TEXT[2].as_bytes());
+
+        let hash = Blake2bHash::finish_hash(&mut hash_state, &ctx);
+        assert_eq!(
+            hex::encode(hash.raw()),
+            "a78ebb4446b81ff6bb63f5767e6fefaa9f9d994c1c7384398c990ce48484f9f4399bcb9009221fcaecef66b41d1f1273f707848eb9773d3c0cd5afd3c5fcdf02"
+        )
     }
 }
