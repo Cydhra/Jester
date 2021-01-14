@@ -31,7 +31,7 @@ fn blake2_mix<N: WrappingAdd + PrimInt, const R1: u8, const R2: u8, const R3: u8
 ) {
     vector[a] = vector[a].wrapping_add(&vector[b]).wrapping_add(&x);
     vector[d] = (vector[d] ^ vector[a]).rotate_right(R1.try_into().unwrap());
-    vector[c] = vector[c].wrapping_add(&vector[b]);
+    vector[c] = vector[c].wrapping_add(&vector[d]);
     vector[b] = (vector[b] ^ vector[c]).rotate_right(R2.try_into().unwrap());
 
     vector[a] = vector[a].wrapping_add(&vector[b]).wrapping_add(&y);

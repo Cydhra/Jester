@@ -204,6 +204,7 @@ fn blake2b_compress(state: &mut Blake2bState, input: &[u8; 128], last_block: boo
         vector[14] ^= u64::MAX
     }
 
+    // transform the input block into an u64 array interpreting the input as little endian words
     let input_block = transform_block(input);
 
     for i in 0..BLAKE_2B_ROUND_COUNT {
