@@ -71,23 +71,25 @@ impl HashFunction for Blake2bHash {
 
         // check whether at least one block can be compressed
         if hash.remaining_data_length + input.len() > BLAKE_2B_BLOCK_SIZE {
-            // if there is remaining data in the buffer, compress it with the new input appended
-            if hash.remaining_data_length > 0 {
-                input_data_offset = BLAKE_2B_BLOCK_SIZE - hash.remaining_data_length;
-                let mut block = [0_u8; 128];
-                block[..hash.remaining_data_length]
-                    .copy_from_slice(&hash.remaining_data_buffer[..hash.remaining_data_length]);
-                block[hash.remaining_data_length..]
-                    .copy_from_slice(&input[..input_data_offset]);
+            // if there is remaining data in the buffer, compress it with the new input appended.
+            // If none is present, just copy the first block of input data anyway and set the
+            // input_data_offset to an entire block length
+            input_data_offset = BLAKE_2B_BLOCK_SIZE - hash.remaining_data_length;
 
-                // update message length by a block
-                hash.message_length += BLAKE_2B_BLOCK_SIZE as u128;
+            let mut block = [0_u8; BLAKE_2B_BLOCK_SIZE];
+            block[..hash.remaining_data_length]
+                .copy_from_slice(&hash.remaining_data_buffer[..hash.remaining_data_length]);
+            block[hash.remaining_data_length..]
+                .copy_from_slice(&input[..input_data_offset]);
 
-                // compress the new block
-                blake2b_compress(hash, &block, false);
+            // update message length by a block
+            hash.message_length += BLAKE_2B_BLOCK_SIZE as u128;
 
-                hash.remaining_data_length = 0;
-            }
+            // compress the new block
+            blake2b_compress(hash, &block, false);
+
+            // reset the remaining data buffer
+            hash.remaining_data_length = 0;
         } else { // else just add the input to the buffer and return from the function
             hash.remaining_data_buffer[hash.remaining_data_length..
                 hash.remaining_data_length + input.len()]
