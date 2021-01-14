@@ -27,14 +27,13 @@ pub fn hmac<Hash, Context>(ctx: &Context, key: &[u8], message: &[u8]) -> Vec<u8>
     };
 
     let mut outer_message = padded_key
-        .clone()
         .iter()
         .map(|v| v ^ 0x5C)
         .collect::<Vec<_>>();
     let mut inner_message = padded_key.iter().map(|v| v ^ 0x36).collect::<Vec<_>>();
 
     inner_message.append(&mut message.to_vec());
-    outer_message.append(&mut Hash::digest_message(ctx,&inner_message).raw().into());
+    outer_message.append(&mut Hash::digest_message(ctx,&inner_message).raw());
 
     Hash::digest_message(ctx, &outer_message).raw()
 }

@@ -33,6 +33,7 @@ pub struct Blake2sState {
     remaining_data_length: usize,
 }
 
+#[allow(clippy::many_single_char_names)]
 fn blake2s_mix(vector: &mut [u32; 16], a: usize, b: usize, c: usize, d: usize, x: u32, y: u32) {
     blake2_mix::<u32, 16, 12, 8, 7>(vector, a, b, c, d, x, y)
 }
@@ -152,7 +153,7 @@ impl HashFunction for Blake2s {
 }
 
 impl BlockHashFunction for Blake2s {
-    fn block_size(ctx: &Self::Context) -> usize {
+    fn block_size(_ctx: &Self::Context) -> usize {
         BLAKE_2S_BLOCK_SIZE
     }
 

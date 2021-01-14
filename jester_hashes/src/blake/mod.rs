@@ -21,6 +21,7 @@ pub const SIGMA: [[usize; 16]; 10] = [
     [10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0],
 ];
 
+#[allow(clippy::many_single_char_names)]
 fn blake2_mix<N: WrappingAdd + PrimInt, const R1: u8, const R2: u8, const R3: u8, const R4: u8>(
     vector: &mut [N; 16],
     a: usize,

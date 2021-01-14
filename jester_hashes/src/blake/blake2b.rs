@@ -157,7 +157,7 @@ impl HashFunction for Blake2b {
 }
 
 impl BlockHashFunction for Blake2b {
-    fn block_size(ctx: &Self::Context) -> usize {
+    fn block_size(_ctx: &Self::Context) -> usize {
         BLAKE_2B_BLOCK_SIZE
     }
 
@@ -182,7 +182,7 @@ impl HashValue for Blake2bHash {
     }
 }
 
-
+#[allow(clippy::many_single_char_names)]
 fn blake2b_mix(vector: &mut [u64; 16], a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) {
     blake2_mix::<u64, 32, 24, 16, 63>(vector, a, b, c, d, x, y)
 }
