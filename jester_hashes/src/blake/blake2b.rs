@@ -1,9 +1,8 @@
 use std::convert::TryInto;
-use std::mem;
-use std::ptr::hash;
 
 use crate::{HashFunction, HashValue};
 use crate::blake::{blake2_mix, SIGMA};
+use byteorder::{LittleEndian, WriteBytesExt};
 
 /// The initial state for any blake2b hash. From here, all blocks are applied.
 pub const INITIAL_2B: Blake2bHash = Blake2bHash([
@@ -64,9 +63,9 @@ impl HashFunction for Blake2bHash {
         state
     }
 
-    fn update_hash(hash: &mut Self::HashState, ctx: &Self::Context, input: &[u8]) {
+    fn update_hash(hash: &mut Self::HashState, _ctx: &Self::Context, input: &[u8]) {
         // offset where to begin reading input data
-        let mut input_data_offset = 0;
+        let mut input_data_offset;
 
         // check whether at least one block can be compressed. This is the case if the remaining
         // data buffer plus all input data is strictly longer than one block size (If the sum is
@@ -154,20 +153,11 @@ impl HashFunction for Blake2bHash {
 
 impl HashValue for Blake2bHash {
     fn raw(&self) -> Vec<u8> {
-        unsafe {
-            // TODO: do this properly
-            mem::transmute::<[u64; 8], [u8; 64]>([
-                u64::from_le(self.0[0]),
-                u64::from_le(self.0[1]),
-                u64::from_le(self.0[2]),
-                u64::from_le(self.0[3]),
-                u64::from_le(self.0[4]),
-                u64::from_le(self.0[5]),
-                u64::from_le(self.0[6]),
-                u64::from_le(self.0[7]),
-            ])
+        let mut b = vec![];
+        for i in 0..8 {
+            b.write_u64::<LittleEndian>(self.0[i]).unwrap();
         }
-            .to_vec()
+        b
     }
 }
 

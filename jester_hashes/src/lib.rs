@@ -101,7 +101,6 @@ pub(crate) mod tests {
     use super::*;
     use super::md5::MD5Hash;
     use super::sha1::SHA1Hash;
-    use std::ptr::hash;
 
     pub const EMPTY_MESSAGE: &str = "";
 
