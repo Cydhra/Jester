@@ -111,8 +111,9 @@ impl HashFunction for MD5Hash {
     /// Compute one round of the MD5 hash function.
     ///
     /// # Parameters
-    /// `input` a 16 byte array containing one block of input data that gets digested.
-    /// TODO: this may be more or less data, store excess in the state
+    /// `hash` contains the mutable hash state during multiple calls to this function
+    /// `input` a slice of data that will be compressed into the hash. If it is not 16-byte
+    /// aligned, excess data will be buffered in the state
     ///
     /// # Returns
     /// A new `MD5HashState` computed from the input state and the input data block.
@@ -157,11 +158,7 @@ impl HashFunction for MD5Hash {
     }
 
     /// Apply padding to the last incomplete block and digest it. May digest two blocks, if the
-    /// `input` must be the complete message that is being hashed.
-    ///
-    /// # Parameters
-    /// `input` the input array that shall be padded and applied. It can be longer than one block,
-    /// all full blocks prefixing the array will be omitted.
+    /// amount of hashed data does not fit into the same block anymore.
     #[allow(clippy::cast_possible_truncation)]
     fn finish_hash(hash: &mut Self::HashState, _ctx: &Self::Context) -> Self::HashData {
         let remaining_data = &hash.remaining_data;
