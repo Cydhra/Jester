@@ -10,4 +10,5 @@ rand = "0.5.6"
 
 [dev-dependencies]
 jester_maths = { path = "../jester_maths"}
+jester_hashes = { path = "../jester_hashes"}
 num = "0.2.0"
