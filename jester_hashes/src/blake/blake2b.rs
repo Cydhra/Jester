@@ -68,7 +68,10 @@ impl HashFunction for Blake2bHash {
         // offset where to begin reading input data
         let mut input_data_offset = 0;
 
-        // check whether at least one block can be compressed
+        // check whether at least one block can be compressed. This is the case if the remaining
+        // data buffer plus all input data is strictly longer than one block size (If the sum is
+        // equal to exactly one block, we cannot compress it because it might be the last block
+        // to compress, in which case the last_block flag must be set).
         if hash.remaining_data_length + input.len() > BLAKE_2B_BLOCK_SIZE {
             // if there is remaining data in the buffer, compress it with the new input appended.
             // If none is present, just copy the first block of input data anyway and set the
@@ -89,7 +92,8 @@ impl HashFunction for Blake2bHash {
 
             // reset the remaining data buffer
             hash.remaining_data_length = 0;
-        } else { // else just add the input to the buffer and return from the function
+        } else { // if not enough data is present, just add the input to the remaining data buffer
+            // and return  from the function
             hash.remaining_data_buffer[hash.remaining_data_length..
                 hash.remaining_data_length + input.len()]
                 .copy_from_slice(&input[..]);
@@ -97,46 +101,28 @@ impl HashFunction for Blake2bHash {
             return;
         }
 
-        // compress full blocks from the input buffer except the last one
-        let block_count = (input.len() - input_data_offset) / BLAKE_2B_BLOCK_SIZE;
-        for i in 0..block_count - 1 {
-            // update message length by a block
+        // now compress blocks until at most one block is present in the input buffer. Again, if
+        // exactly one block is present, we cannot compress it until we know if more data will
+        // arrive.
+        while input.len() - input_data_offset > BLAKE_2B_BLOCK_SIZE {
+            // increase message length by one block
             hash.message_length += BLAKE_2B_BLOCK_SIZE as u128;
 
             // compress the next block
             blake2b_compress(
                 hash,
-                &input[input_data_offset + i * BLAKE_2B_BLOCK_SIZE..
-                    input_data_offset + (i + 1) * BLAKE_2B_BLOCK_SIZE].try_into().unwrap(),
-                false,
-            )
-        }
-
-        // if there is more data in the input buffer, the last full block is not the last block
-        // of the algorithm and can therefore be compressed safely
-        if input_data_offset + block_count * BLAKE_2B_BLOCK_SIZE < input.len() {
-            // update message length by a block
-            hash.message_length += BLAKE_2B_BLOCK_SIZE as u128;
-
-            // compress the last block
-            blake2b_compress(
-                hash,
-                &input[input_data_offset + (block_count - 1) * BLAKE_2B_BLOCK_SIZE..
-                    input_data_offset + block_count * BLAKE_2B_BLOCK_SIZE].try_into().unwrap(),
+                &input[input_data_offset..input_data_offset + BLAKE_2B_BLOCK_SIZE]
+                    .try_into().unwrap(),
                 false,
             );
 
-            hash.remaining_data_length = input.len() -
-                (input_data_offset + block_count * BLAKE_2B_BLOCK_SIZE);
-            hash.remaining_data_buffer[..hash.remaining_data_length]
-                .copy_from_slice(&input[input_data_offset + block_count * BLAKE_2B_BLOCK_SIZE..]);
+            // advance the offset by the compressed block length
+            input_data_offset += BLAKE_2B_BLOCK_SIZE;
         }
-        // otherwise this could potentially be the last block, therefore only add it to the buffer
-        else {
-            hash.remaining_data_length = BLAKE_2B_BLOCK_SIZE;
-            hash.remaining_data_buffer[..].copy_from_slice(&input[input_data_offset
-                + (block_count - 1) * BLAKE_2B_BLOCK_SIZE..]);
-        }
+
+        // store any left over data in the remaining data buffer
+        hash.remaining_data_length = input.len() - input_data_offset;
+        hash.remaining_data_buffer[..hash.remaining_data_length].copy_from_slice(&input[input_data_offset..]);
     }
 
     fn finish_hash(hash: &mut Self::HashState, ctx: &Self::Context) -> Self::HashData {
