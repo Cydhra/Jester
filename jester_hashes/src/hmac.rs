@@ -50,6 +50,7 @@ mod tests {
     use crate::md5::MD5Hash;
 
     use super::hmac;
+    use crate::sha1::SHA1Hash;
 
     const HMAC_EXAMPLE: &[u8] = b"The quick brown fox jumps over the lazy dog";
 
@@ -63,9 +64,9 @@ mod tests {
 
     #[test]
     fn test_hmac_sha1() {
-        // assert_eq!(
-        //     hex::encode(hmac::<SHA1Hash, ()>(&(),b"key", HMAC_EXAMPLE)),
-        //     "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
-        // );
+        assert_eq!(
+            hex::encode(hmac::<SHA1Hash, ()>(&(),b"key", HMAC_EXAMPLE)),
+            "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9"
+        );
     }
 }
