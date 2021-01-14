@@ -108,4 +108,18 @@ pub(crate) mod blake2_tests {
             "eb6ec15daf9546254f0809"
         );
     }
+
+    #[test]
+    fn blake2b_keyed_hash_test() {
+        // example from pyblake2 documentation: https://pythonhosted.org/pyblake2/examples.html
+        assert_eq!(
+            hex::encode(
+                Blake2b::digest_message(
+                    &Blake2bContext { output_len: 16, key: "pseudorandom key".as_bytes().to_vec() },
+                    &"message data".as_bytes(),
+                ).raw()
+            ),
+            "3d363ff7401e02026f4a4687d4863ced"
+        );
+    }
 }
