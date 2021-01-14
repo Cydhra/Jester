@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use crate::{HashFunction, HashValue};
+use crate::{HashFunction, HashValue, BlockHashFunction};
 use crate::blake::{blake2_mix, SIGMA};
 use byteorder::{LittleEndian, WriteBytesExt};
 
@@ -153,6 +153,16 @@ impl HashFunction for Blake2b {
 
         Self::update_hash(&mut hash_state, ctx, input);
         Self::finish_hash(&mut hash_state, ctx)
+    }
+}
+
+impl BlockHashFunction for Blake2b {
+    fn block_size(ctx: &Self::Context) -> usize {
+        BLAKE_2B_BLOCK_SIZE
+    }
+
+    fn output_size(ctx: &Self::Context) -> usize {
+        ctx.output_len
     }
 }
 
