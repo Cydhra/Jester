@@ -229,7 +229,7 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
 
     /// Returns (self ^ exponent) % Self::field_prime()
     fn pow(&self, exponent: &Self) -> Self {
-        self.as_uint().modpow(&exponent.as_uint(), Self::field_prime()).into()
+        self.as_uint().modpow(&exponent.as_uint(), &Self::field_prime().as_uint()).into()
     }
 
     /// Returns (self ^ exponent) % modulus
@@ -267,7 +267,7 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
     /// cardinality, `Option::None` is returned.
     fn from_bytes_le(bytes: &[u8]) -> Option<Self> {
         let n = BigUint::from_bytes_le(bytes);
-        if n < Self::field_prime() {
+        if n < Self::field_prime().as_uint() {
             Option::Some(n.into())
         } else {
             Option::None
@@ -279,7 +279,7 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
     /// cardinality, `Option::None` is returned.
     fn from_bytes_be(bytes: &[u8]) -> Option<Self> {
         let n = BigUint::from_bytes_be(bytes);
-        if n < Self::field_prime() {
+        if n < Self::field_prime().as_uint() {
             Option::Some(n.into())
         } else {
             Option::None
