@@ -227,6 +227,16 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
     /// Returns the prime as a `BigUint` instance
     fn as_uint(&self) -> BigUint;
 
+    /// Returns (self ^ exponent) % Self::field_prime()
+    fn pow(&self, exponent: &Self) -> Self {
+        self.as_uint().modpow(&exponent.as_uint(), Self::field_prime()).into()
+    }
+
+    /// Returns (self ^ exponent) % modulus
+    fn modpow(&self, exponent: &Self, modulus: &Self) -> Self {
+        self.as_uint().modpow(&exponent.as_uint(), &modulus.as_uint()).into()
+    }
+
     /// Calculate the multiplicative inverse of this element.
     fn inverse(&self) -> Self {
         let (_, _, inverse) = Self::extended_greatest_common_divisor(&Self::field_prime(), self);
