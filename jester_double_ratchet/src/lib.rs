@@ -98,7 +98,7 @@ pub enum DecryptionException {
     InvalidMessageHeader {},
 
     /// The message was received out of order and that should be reflected to the user appropriately
-    OutOfOrderMessage { decrypted_message: Box<[u8]> },
+    OutOfOrderMessage { decrypted_message: Vec<u8> },
 
     /// The message header identified the message as an out-of-order message but no message key for this out-of-order
     /// arrival could be generated, rendering its decryption impossible
@@ -260,7 +260,7 @@ where
     pub fn decrypt_first_message<R>(
         mut self,
         rng: &mut R,
-        message: DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>,
+        message: DoubleRatchetAlgorithmMessage<DHPublicKey, Vec<u8>>,
     ) -> (
         DoubleRatchetProtocol<
             DHScheme,
@@ -275,7 +275,7 @@ where
             MessageKey,
             state::Established,
         >,
-        Box<[u8]>,
+        Vec<u8>,
     )
     where
         R: RngCore + CryptoRng,
@@ -425,7 +425,7 @@ where
     pub fn encrypt_message(
         &mut self,
         message: &[u8],
-    ) -> DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>> {
+    ) -> DoubleRatchetAlgorithmMessage<DHPublicKey, Vec<u8>> {
         // update sending ratchet
         let (updated_sending_chain_key, message_key) =
             MessageKdf::derive_key_without_input(self.sending_chain_key.take().unwrap());
@@ -452,8 +452,8 @@ where
     pub fn decrypt_message<R>(
         &mut self,
         rng: &mut R,
-        message: DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>,
-    ) -> Result<Box<[u8]>, DecryptionException>
+        message: DoubleRatchetAlgorithmMessage<DHPublicKey, Vec<u8>>,
+    ) -> Result<Vec<u8>, DecryptionException>
     where
         R: RngCore + CryptoRng,
     {
@@ -615,7 +615,7 @@ fn detect_missing_messages<
         MessageKey,
         State,
     >,
-    message: &DoubleRatchetAlgorithmMessage<DHPublicKey, Box<[u8]>>,
+    message: &DoubleRatchetAlgorithmMessage<DHPublicKey, Vec<u8>>,
 ) -> Result<(usize, usize), ProtocolException<DHPublicKey>>
 where
     DHScheme: DiffieHellmanKeyExchangeScheme<

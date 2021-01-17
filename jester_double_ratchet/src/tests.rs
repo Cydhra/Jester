@@ -24,13 +24,13 @@ impl SymmetricalEncryptionScheme for TestEncryption {
         "super_secure_password"
     }
 
-    fn encrypt_message(key: &Self::Key, message: &[u8]) -> Box<[u8]> {
-        Box::from([key.as_bytes(), message].concat())
+    fn encrypt_message(key: &Self::Key, message: &[u8]) -> Vec<u8> {
+        [key.as_bytes(), message].concat()
     }
 
-    fn decrypt_message(key: &Self::Key, message: &[u8]) -> Box<[u8]> {
+    fn decrypt_message(key: &Self::Key, message: &[u8]) -> Vec<u8> {
         if message.starts_with(key.as_bytes()) {
-            Box::from(&message[key.as_bytes().len()..])
+            message[key.as_bytes().len()..].to_vec()
         } else {
             panic!("wrong key")
         }

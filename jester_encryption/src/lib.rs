@@ -22,10 +22,10 @@ pub trait SymmetricalEncryptionScheme {
         R: RngCore + CryptoRng;
 
     /// Encrypt a message using the provided shared key. The cipher text will be returned inside a `Box`.
-    fn encrypt_message(key: &Self::Key, message: &[u8]) -> Box<[u8]>;
+    fn encrypt_message(key: &Self::Key, message: &[u8]) -> Vec<u8>;
 
     /// Decrypt a cipher text using the provided shared key. The clear text will be returned inside a `Box`.
-    fn decrypt_message(key: &Self::Key, message: &[u8]) -> Box<[u8]>;
+    fn decrypt_message(key: &Self::Key, message: &[u8]) -> Vec<u8>;
 }
 
 /// A trait representing an asymmetrical encryption scheme. It offers methods for generating a random key pair and
@@ -43,8 +43,8 @@ pub trait AsymmetricalEncryptionScheme {
         R: RngCore + CryptoRng;
 
     /// Encrypt a message using the provided public key. The cipher text will be returned inside a `Box`.
-    fn encrypt_message(key: &Self::PublicKey, message: &[u8]) -> Box<[u8]>;
+    fn encrypt_message(key: &Self::PublicKey, message: &[u8]) -> Vec<u8>;
 
     /// Decrypt a cipher text using the provided private key. The clear text will be returned inside a `Box`.
-    fn decrypt_message(key: &Self::PrivateKey, cipher: &[u8]) -> Box<[u8]>;
+    fn decrypt_message(key: &Self::PrivateKey, cipher: &[u8]) -> Vec<u8>;
 }
