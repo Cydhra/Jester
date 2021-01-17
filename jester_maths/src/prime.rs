@@ -285,6 +285,17 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
             Option::None
         }
     }
+
+    /// Returns a representation of `self` in little endian byte order
+    fn as_bytes_le(&self) -> Vec<u8> {
+        self.as_uint().to_bytes_le()
+    }
+
+
+    /// Returns a representation of `self` in big endian byte order
+    fn as_bytes_be(&self) -> Vec<u8> {
+        self.as_uint().to_bytes_be()
+    }
 }
 
 // generate mersenne prime field structs
