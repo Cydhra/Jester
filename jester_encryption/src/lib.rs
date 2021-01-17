@@ -6,6 +6,7 @@
 
 use rand::{CryptoRng, RngCore};
 
+pub mod rsa;
 pub mod diffie_hellman;
 
 /// A trait representing a symmetrical encryption scheme. It offers methods for generating a random key (though one
