@@ -4,3 +4,4 @@
 #![recursion_limit = "256"]
 
 pub mod prime;
+pub mod prime_test;
