@@ -251,6 +251,30 @@ pub trait PrimeField: Num + Clone + Sum + Product + From<BigUint> + FromPrimitiv
     fn generate_random_member<R: RngCore + CryptoRng + RandBigInt>(rng: &mut R) -> Self {
         rng.gen_biguint_below(&Self::field_prime().as_uint()).into()
     }
+
+    /// Convert a slice of bytes into a number within this prime field interpreting the bytes as
+    /// a little endian big integer. However, if the resulting number exceeds this field's
+    /// cardinality, `Option::None` is returned.
+    fn from_bytes_le(bytes: &[u8]) -> Option<Self> {
+        let n = BigUint::from_bytes_le(bytes);
+        if n < Self::field_prime() {
+            Option::Some(n.into())
+        } else {
+            Option::None
+        }
+    }
+
+    /// Convert a slice of bytes into a number within this prime field interpreting the bytes as
+    /// a big endian big integer. However, if the resulting number exceeds this field's
+    /// cardinality, `Option::None` is returned.
+    fn from_bytes_be(bytes: &[u8]) -> Option<Self> {
+        let n = BigUint::from_bytes_be(bytes);
+        if n < Self::field_prime() {
+            Option::Some(n.into())
+        } else {
+            Option::None
+        }
+    }
 }
 
 // generate mersenne prime field structs
