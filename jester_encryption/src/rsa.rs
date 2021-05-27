@@ -33,7 +33,7 @@ impl<P> AsymmetricalEncryptionScheme for RSACryptoSystem<P>
     fn encrypt_message(key: &Self::PublicKey, message: &[u8]) -> Vec<u8> {
         let n = P::from_bytes_le(message);
         if let Some(msg) = n {
-            msg.modpow(&key.e, &key.n).to_bytes_le()
+            msg.modpow(&key.e, &key.n).as_bytes_le()
         } else {
             panic!("message length exceeds group cardinality")
         }
@@ -44,7 +44,7 @@ impl<P> AsymmetricalEncryptionScheme for RSACryptoSystem<P>
     fn decrypt_message(key: &Self::PrivateKey, cipher: &[u8]) -> Vec<u8> {
         let n = P::from_bytes_le(cipher);
         if let Some(c) = n {
-            c.modpow(&key.d, &key.n).to_bytes_le()
+            c.modpow(&key.d, &key.n).as_bytes_le()
         } else {
             panic!("cipher length exceeds group cardinality")
         }
