@@ -3,12 +3,9 @@ use jester_maths::prime::PrimeField;
 use rand::{RngCore, CryptoRng};
 use num::{BigUint, Num};
 use std::marker::PhantomData;
-use jester_maths::prime_test::PrimeTest;
 
-pub struct RSACryptoSystem<P, PTest>
-    where P: Num, PTest: PrimeTest<P> {
+pub struct RSACryptoSystem<P> where P: Num {
     marker: PhantomData<P>,
-    test: PhantomData<PTest>,
 }
 
 pub struct RSAPrivateKey<P> {
@@ -21,34 +18,13 @@ pub struct RSAPublicKey<P> {
     pub n: P,
 }
 
-impl<P, PTest> AsymmetricalEncryptionScheme for RSACryptoSystem<P, PTest>
-    where
-        P: PrimeField,
-        PTest: PrimeTest<P>,
-{
+impl<P> AsymmetricalEncryptionScheme for RSACryptoSystem<P>
+    where P: PrimeField {
     type PrivateKey = RSAPrivateKey<P>;
     type PublicKey = RSAPublicKey<P>;
 
     fn generate_keypair<R>(rng: &mut R) -> (Self::PrivateKey, Self::PublicKey) where
         R: RngCore + CryptoRng {
-
-        // TODO: which length of p is to be rejected for being too small?
-        //  Answer: R, S and A recommend at least 100 (decimal) digits
-        let mut p = P::generate_random_member(rng);
-        while !PTest::is_prime(p) {
-            p = P::generate_random_member(rng)
-        }
-
-        let mut q = P::generate_random_member(rng);
-        let mut bits = (q.as_uint().bits() - q.as_uint().bits());
-        while !PTest::is_prime(q) || !(bits > 0 && bits < 30) {
-            q = P::generate_random_member(rng);
-            bits = (q.as_uint().bits() - q.as_uint().bits());
-        }
-
-        let module = p.mul(&q);
-        let phi = (p.sub(1)).mul(&(q.sub(1)));
-
         unimplemented!()
     }
 
